@@ -61,7 +61,7 @@ func init() {
     token := string(file)
     s, err = discordgo.New("Bot " + token)
     if err != nil {log.Fatalf("Invalid token: %v", token)}
-	
+
 	mods = make(map[string]Mod)
 	authors = make(map[string]ModArr)
 	versions = make(map[string]ModArr)
@@ -159,7 +159,6 @@ var (
                 focusedOption, err := FocusedOption(data)
                 if err != nil {panic(err)}
 
-				log.Println(focusedOption.Name)
                 switch focusedOption.Name {
                 case "name":
 					choices = []*discordgo.ApplicationCommandOptionChoice{
@@ -177,22 +176,18 @@ var (
 						},
 					}
                 case "author":
-					choices = []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name: "Author 1",
-							Value: "author1",
-						},
-						{
-							Name: "Author 2",
-							Value: "author2",
-						},
-						{
-							Name: "Author 3",
-							Value: "author3",
-						},
+					value := strings.ToLower(focusedOption.StringValue())
+					for author, mods := range(authors) {
+						if len(choices) == 25 {break}
+						if value == "" || strings.Contains(author, value) {
+							choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+								Name: mods[0].Owner,
+								Value: author,
+							})
+						}
 					}
                 case "version":
-					for version := range(versions) {
+					for _, version := range(version_list) {
 						choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
 							Name: version,
 							Value: version,
@@ -232,6 +227,7 @@ func FormatVersion(input string) string {
 	if err != nil {panic(err)}
 	b, err := strconv.ParseInt(parts[1], 10, 64)
 	if err != nil {panic(err)}
+
 	output := strconv.FormatInt(a, 10) + "." + strconv.FormatInt(b, 10)
 	if _, ok := versions[output]; ok {
 		return output
