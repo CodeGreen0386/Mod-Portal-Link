@@ -1,19 +1,19 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
+    "encoding/json"
+    "errors"
+    "io"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "sort"
+    "strconv"
+    "strings"
+    "time"
 
-	"github.com/bwmarrin/discordgo"
+    "github.com/bwmarrin/discordgo"
 )
 
 type response struct {
@@ -47,13 +47,14 @@ type info_json struct {
 }
 
 var (
-	s        *discordgo.Session
+    s        *discordgo.Session
     mods     map[string]Mod
     authors  map[string]ModArr
-	versions map[string]ModArr
+    versions map[string]ModArr
 )
 
-var version_list = [...]string{"1.1", "1.0", "0.18", "0.17", "0.16", "0.15", "0.14", "0.13"}
+var versionList = [...]string{"1.1", "1.0", "0.18", "0.17", "0.16", "0.15", "0.14", "0.13"}
+const defaultVersion = "1.1"
 
 func init() {
     file, err := os.ReadFile("token.txt")
@@ -62,22 +63,28 @@ func init() {
     s, err = discordgo.New("Bot " + token)
     if err != nil {log.Fatalf("Invalid token: %v", token)}
 
-	mods = make(map[string]Mod)
-	authors = make(map[string]ModArr)
-	versions = make(map[string]ModArr)
-	for _, version := range(version_list) {
-		versions[version] = make(ModArr, 0)
-	}
-}
-
-func VersionFilter(version string) ModArr {
-    if newList, ok := versions[version]; ok {
-        return newList
+    mods = make(map[string]Mod)
+    authors = make(map[string]ModArr)
+    versions = make(map[string]ModArr)
+    for _, version := range(versionList) {
+        versions[version] = make(ModArr, 0)
     }
-    return versions["any"]
 }
 
-func AuthorFilter(modList ModArr, author string) ModArr {
+func VersionFilter(data discordgo.ApplicationCommandInteractionData) ModArr {
+    versionOption, err := NamedOption(data, "version")
+    if err != nil {return versions[defaultVersion]}
+    value := versionOption.StringValue()
+    if list, ok := versions[value]; ok {
+        return list
+    }
+    return versions[defaultVersion]
+}
+
+func AuthorFilter(modList ModArr, data discordgo.ApplicationCommandInteractionData) ModArr {
+    authorOption, err := NamedOption(data, "author")
+    if err != nil {return modList}
+    author := authorOption.StringValue()
     if author == "" {return modList}
     author = strings.ToLower(author)
     if _, ok := authors[author]; !ok {
@@ -103,12 +110,30 @@ func FocusedOption(data discordgo.ApplicationCommandInteractionData) (*discordgo
 }
 
 func NamedOption(data discordgo.ApplicationCommandInteractionData, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
-	for _, option := range(data.Options) {
-		if option.Name == name {
-			return option, nil
-		}
+    for _, option := range(data.Options) {
+        if option.Name == name {
+            return option, nil
+        }
+    }
+    return nil, errors.New("No named option found")
+}
+
+func NewChoice(name, value string) *discordgo.ApplicationCommandOptionChoice{
+	if len(name) > 100 {
+		name = name[0:97] + "..."
 	}
-	return nil, errors.New("No named option found")
+    return &discordgo.ApplicationCommandOptionChoice{
+        Name: name,
+        Value: value,
+    }
+}
+
+func MaxCombine(a, b []*discordgo.ApplicationCommandOptionChoice, max int) []*discordgo.ApplicationCommandOptionChoice {
+    for _, choice := range(b) {
+        if len(a) == max {return a}
+        a = append(a, choice)
+    }
+    return a
 }
 
 var (
@@ -161,38 +186,66 @@ var (
 
                 switch focusedOption.Name {
                 case "name":
-					choices = []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name: "Mod 1",
-							Value: "mod1",
-						},
-						{
-							Name: "Mod 2",
-							Value: "mod2",
-						},
-						{
-							Name: "Mod 3",
-							Value: "mod3",
-						},
-					}
+                    value := strings.ToLower(focusedOption.StringValue())
+                    modList := VersionFilter(data)
+                    modList = AuthorFilter(modList, data)
+                    titleFirst := []*discordgo.ApplicationCommandOptionChoice{}
+                    titleLast  := []*discordgo.ApplicationCommandOptionChoice{}
+                    nameFirst  := []*discordgo.ApplicationCommandOptionChoice{}
+                    nameLast   := []*discordgo.ApplicationCommandOptionChoice{}
+                    for _, mod := range(modList) {
+                        title, name := strings.ToLower(mod.Title), strings.ToLower(mod.Name)
+                        if value == "" {
+                            titleFirst = append(titleFirst, NewChoice(mod.Title, mod.Name))
+                            if len(titleFirst) == 25 {break}
+                            continue
+                        }
+
+                        titleIndex := strings.Index(title, value)
+                        if titleIndex >= 0 {
+                            newChoice := NewChoice(mod.Title, mod.Name)
+                            if titleIndex == 0 {
+                                titleFirst = append(titleFirst, newChoice)
+                                if len(titleFirst) == 25 {break}
+                            } else {
+                                titleLast = append(titleLast, newChoice)
+                            }
+                            continue
+                        }
+
+                        nameIndex := strings.Index(name, value)
+                        if nameIndex >= 0 {
+                            newChoice := NewChoice(mod.Title, mod.Name)
+                            if nameIndex == 0 {
+                                nameFirst = append(nameFirst, newChoice)
+                            } else {
+                                nameLast = append(nameLast, newChoice)
+                            }
+                        }
+                    }
+
+					choices = titleFirst
+                    choices = MaxCombine(choices, titleLast, 25)
+                    choices = MaxCombine(choices, nameFirst, 25)
+                    choices = MaxCombine(choices, nameLast, 25)
                 case "author":
-					value := strings.ToLower(focusedOption.StringValue())
-					for author, mods := range(authors) {
-						if len(choices) == 25 {break}
-						if value == "" || strings.Contains(author, value) {
-							choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
-								Name: mods[0].Owner,
-								Value: author,
-							})
-						}
-					}
+                    value := strings.ToLower(focusedOption.StringValue())
+                    for author, mods := range(authors) {
+                        if len(choices) == 25 {break}
+                        if value == "" || strings.Contains(author, value) {
+                            choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+                                Name: mods[0].Owner,
+                                Value: author,
+                            })
+                        }
+                    }
                 case "version":
-					for _, version := range(version_list) {
-						choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
-							Name: version,
-							Value: version,
-						})
-					}
+                    for _, version := range(versionList) {
+                        choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+                            Name: version,
+                            Value: version,
+                        })
+                    }
                 }
 
                 if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -207,7 +260,7 @@ var (
 )
 
 func (m ModArr) Len() int {
-	return len(m)
+    return len(m)
 }
 func (m ModArr) Swap(a, b int) {
     m[a], m[b] = m[b], m[a]
@@ -222,17 +275,17 @@ func (m ModArr) Less(a, b int) bool {
 }
 
 func FormatVersion(input string) string {
-	parts := strings.Split(input, ".")
-	a, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil {panic(err)}
-	b, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil {panic(err)}
+    parts := strings.Split(input, ".")
+    a, err := strconv.ParseInt(parts[0], 10, 64)
+    if err != nil {panic(err)}
+    b, err := strconv.ParseInt(parts[1], 10, 64)
+    if err != nil {panic(err)}
 
-	output := strconv.FormatInt(a, 10) + "." + strconv.FormatInt(b, 10)
-	if _, ok := versions[output]; ok {
-		return output
-	}
-	return ""
+    output := strconv.FormatInt(a, 10) + "." + strconv.FormatInt(b, 10)
+    if _, ok := versions[output]; ok {
+        return output
+    }
+    return ""
 }
 
 func CompareCache(data ModArr) {
@@ -258,17 +311,17 @@ func UpdateCache() {
     var data response
     if err := json.Unmarshal(body, &data); err != nil {panic(err)}
 
-	sort.Sort(data.Results)
-	for _, mod := range(data.Results) {
-		if version := mod.Latest_release.Info_json.Factorio_version; version != "" {
-			version = FormatVersion(version)
-			if version == "" {continue}
-			mods[mod.Name] = mod
-			owner := strings.ToLower(mod.Owner)
-			authors[owner] = append(authors[owner], mod)
-			versions[version] = append(versions[version], mod)
-		}
-	}
+    sort.Sort(data.Results)
+    for _, mod := range(data.Results) {
+        if version := mod.Latest_release.Info_json.Factorio_version; version != "" {
+            version = FormatVersion(version)
+            if version == "" {continue}
+            mods[mod.Name] = mod
+            owner := strings.ToLower(mod.Owner)
+            authors[owner] = append(authors[owner], mod)
+            versions[version] = append(versions[version], mod)
+        }
+    }
 
     // CompareCache(data.Results)
 
