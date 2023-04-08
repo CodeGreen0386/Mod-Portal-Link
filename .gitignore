@@ -1,5 +1,6 @@
-*.txt
-*.mod
-*.sum
 *.json
+*.mod
+*.png
+*.sum
+*.txt
 /.vscode

@@ -1,22 +1,23 @@
 package main
 
 import (
-    "encoding/json"
-    "errors"
-    "io"
-    "log"
-    "net/http"
-    "os"
-    "os/signal"
-    "sort"
-    "strconv"
-    "strings"
-    "time"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
 
-    "github.com/bwmarrin/discordgo"
+	"github.com/bwmarrin/discordgo"
 )
 
-type response struct {
+type Response struct {
     Pagination map[string]string `json:"pagination"`
     Results    ModArr            `json:"results"`
 }
@@ -27,19 +28,14 @@ type Mod struct {
     Title 			string
     Owner 			string
     Summary 		string
-    Downloads_count int
-    Category 		string
-    Score 			float32
+    Downloads_count int64
+    Category        string
     Latest_release  latest_release
+    Thumbnail       string
 }
 
 type latest_release struct {
-    Download_url string
-    File_name 	 string
     Info_json 	 info_json
-    Released_at  string
-    Version 	 string
-    Sha1 		 string
 }
 
 type info_json struct {
@@ -71,7 +67,26 @@ func init() {
     }
 }
 
-func VersionFilter(data discordgo.ApplicationCommandInteractionData) ModArr {
+func FormatName(name string) string {
+    return strings.Replace(name, " ", "%20", -1)
+}
+
+func RequestMod(name string, data *Mod, full bool) {
+    name = FormatName(name)
+    url := "https://mods.factorio.com/api/mods/%s"
+    if full {url = url + "/full"}
+
+    resp, err := http.Get(fmt.Sprintf(url, name))
+    if err != nil {panic(err)}
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {panic(err)}
+
+    if err := json.Unmarshal(body, &data); err != nil {panic(err)}
+}
+
+func VersionFilter(data *discordgo.ApplicationCommandInteractionData) ModArr {
     versionOption, err := NamedOption(data, "version")
     if err != nil {return versions[defaultVersion]}
     value := versionOption.StringValue()
@@ -81,7 +96,7 @@ func VersionFilter(data discordgo.ApplicationCommandInteractionData) ModArr {
     return versions[defaultVersion]
 }
 
-func AuthorFilter(modList ModArr, data discordgo.ApplicationCommandInteractionData) ModArr {
+func AuthorFilter(modList ModArr, data *discordgo.ApplicationCommandInteractionData) ModArr {
     authorOption, err := NamedOption(data, "author")
     if err != nil {return modList}
     author := authorOption.StringValue()
@@ -100,7 +115,7 @@ func AuthorFilter(modList ModArr, data discordgo.ApplicationCommandInteractionDa
 }
 
 type ApplicationCommandInteractionData discordgo.ApplicationCommandInteractionData
-func FocusedOption(data discordgo.ApplicationCommandInteractionData) (*discordgo.ApplicationCommandInteractionDataOption, error) {
+func FocusedOption(data *discordgo.ApplicationCommandInteractionData) (*discordgo.ApplicationCommandInteractionDataOption, error) {
     for _, option := range(data.Options) {
         if option.Focused {
             return option, nil
@@ -109,7 +124,7 @@ func FocusedOption(data discordgo.ApplicationCommandInteractionData) (*discordgo
     return nil, errors.New("No focused option found")
 }
 
-func NamedOption(data discordgo.ApplicationCommandInteractionData, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
+func NamedOption(data *discordgo.ApplicationCommandInteractionData, name string) (*discordgo.ApplicationCommandInteractionDataOption, error) {
     for _, option := range(data.Options) {
         if option.Name == name {
             return option, nil
@@ -119,9 +134,9 @@ func NamedOption(data discordgo.ApplicationCommandInteractionData, name string) 
 }
 
 func NewChoice(name, value string) *discordgo.ApplicationCommandOptionChoice{
-	if len(name) > 100 {
-		name = name[0:97] + "..."
-	}
+    if len(name) > 100 {
+        name = name[0:97] + "..."
+    }
     return &discordgo.ApplicationCommandOptionChoice{
         Name: name,
         Value: value,
@@ -171,24 +186,63 @@ var (
             switch i.Type {
             case discordgo.InteractionApplicationCommand:
                 data := i.ApplicationCommandData()
+                name := data.Options[0].StringValue()
+                mod, ok := mods[name]
+                if !ok {
+                    s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+                        Type: discordgo.InteractionResponseChannelMessageWithSource,
+                        Data: &discordgo.InteractionResponseData{
+                            Content: fmt.Sprintf("ERROR: The mod %s does not exist.", name),
+                        },
+                    })
+                    return
+                }
+
+                var resp Mod
+                var thumbnail string
+                RequestMod(name, &resp, false)
+                if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
+                    thumbnail = "https://assets-mod.factorio.com/" + resp.Thumbnail
+                }
+
                 err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
                     Type: discordgo.InteractionResponseChannelMessageWithSource,
                     Data: &discordgo.InteractionResponseData{
-                        Content: "https://mods.factorio.com/mod/" + data.Options[0].StringValue(),
+                        Embeds: []*discordgo.MessageEmbed{
+                            {
+                                URL: fmt.Sprintf("https://mods.factorio.com/mod/%s", FormatName(name)),
+                                Title: mod.Title,
+                                Description: mod.Summary,
+                                Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
+                                Color: 0x57F287,
+                                Fields: []*discordgo.MessageEmbedField{
+                                    {
+                                        Name: "Author:",
+                                        Value: fmt.Sprintf("`%s`", mod.Owner),
+                                        Inline: true,
+                                    },
+                                    {
+                                        Name: "Downloads:",
+                                        Value: strconv.FormatInt(mod.Downloads_count, 10),
+                                        Inline: true,
+                                    },
+                                },
+                            },
+                        },
                     },
                 })
                 if err != nil {panic(err)}
             case discordgo.InteractionApplicationCommandAutocomplete:
                 data := i.ApplicationCommandData()
                 choices := []*discordgo.ApplicationCommandOptionChoice{}
-                focusedOption, err := FocusedOption(data)
+                focusedOption, err := FocusedOption(&data)
                 if err != nil {panic(err)}
 
                 switch focusedOption.Name {
                 case "name":
                     value := strings.ToLower(focusedOption.StringValue())
-                    modList := VersionFilter(data)
-                    modList = AuthorFilter(modList, data)
+                    modList := VersionFilter(&data)
+                    modList = AuthorFilter(modList, &data)
                     titleFirst := []*discordgo.ApplicationCommandOptionChoice{}
                     titleLast  := []*discordgo.ApplicationCommandOptionChoice{}
                     nameFirst  := []*discordgo.ApplicationCommandOptionChoice{}
@@ -224,8 +278,7 @@ var (
                         }
                     }
 
-					choices = titleFirst
-                    choices = MaxCombine(choices, titleLast, 25)
+                    choices = MaxCombine(titleFirst, titleLast, 25)
                     choices = MaxCombine(choices, nameFirst, 25)
                     choices = MaxCombine(choices, nameLast, 25)
                 case "author":
@@ -308,7 +361,7 @@ func UpdateCache() {
     body, err := io.ReadAll(resp.Body)
     if err != nil {panic(err)}
 
-    var data response
+    var data Response
     if err := json.Unmarshal(body, &data); err != nil {panic(err)}
 
     sort.Sort(data.Results)
