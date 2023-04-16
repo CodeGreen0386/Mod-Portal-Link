@@ -643,7 +643,6 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Description: fmt.Sprintf("Mods:\n%s\n\nAuthors:\n%s", modOut, authorOut),
                     Color: colors.Gold,
                 })
-
             }
             guildMap[i.GuildID] = guildData
             WriteJson("guilds.json", guildMap)
@@ -810,6 +809,29 @@ func CacheMods(modArr ModArr) {
     }
 }
 
+func FormatChangelog(resp string, mod Mod) string {
+    parts := strings.Split(resp, strings.Repeat("-", 99))
+    if len(parts) == 1 {return ""}
+    changelog := parts[1]
+    if changelog == resp {return ""}
+    changelog = strings.ReplaceAll(changelog, "\n  ", "\n")
+    index := strings.Index(changelog, "Version: ")
+    if index == -1 {return ""}
+    index = index + len("Version: ")
+    endIndex := strings.Index(changelog[index:], "\n")
+    if endIndex == -1 {return ""}
+    version := changelog[index:index+endIndex]
+    version = strings.ReplaceAll(version, "\r", "")
+    if version != mod.LatestRelease.Version {return ""}
+    changelog = changelog[index+endIndex+1:]
+    index = strings.Index(changelog, "Date: ")
+    if index != -1 {
+        endIndex = strings.Index(changelog[index:], "\n")
+        changelog = changelog[index+endIndex+1:]
+    }
+	return changelog
+}
+
 func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew bool) {
     var title string
     var color int
@@ -821,17 +843,9 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
         color = colors.Blue
     }
 
-    var resp FullMod
-    var thumbnail string
-    RequestMod(mod.Name, &resp, true)
-    if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
-        thumbnail = "https://assets-mod.factorio.com/" + resp.Thumbnail
-    }
-
-    s.ChannelMessageSendEmbed(guildData.Channel, &discordgo.MessageEmbed{
-        URL: ModURL(mod.Name),
+	embed := &discordgo.MessageEmbed{
+		URL: ModURL(mod.Name),
         Title: Truncate(fmt.Sprintf(title, mod.Title), 256),
-        Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
         Color: color,
         Fields: []*discordgo.MessageEmbedField{
             {
@@ -850,28 +864,25 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
                 Inline: true,
             },
         },
-    })
-    if !guildData.Changelogs {return}
-    parts := strings.Split(resp.Changelog, strings.Repeat("-", 99))
-    if len(parts) == 1 {return}
-    changelog := parts[1]
-    if changelog == resp.Changelog {return}
-    changelog = strings.ReplaceAll(changelog, "\n  ", "\n")
-    index := strings.Index(changelog, "Version: ")
-    if index == -1 {return}
-    index = index + len("Version: ")
-    endIndex := strings.Index(changelog[index:], "\n")
-    if endIndex == -1 {return}
-    version := changelog[index:index+endIndex]
-    version = strings.ReplaceAll(version, "\r", "")
-    if version != mod.LatestRelease.Version {return}
-    changelog = changelog[index+endIndex+1:]
-    index = strings.Index(changelog, "Date: ")
-    if index != -1 {
-        endIndex = strings.Index(changelog[index:], "\n")
-        changelog = changelog[index+endIndex+1:]
+	}
+
+    var resp FullMod
+    var thumbnail string
+    RequestMod(mod.Name, &resp, true)
+    if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
+        thumbnail = "https://assets-mod.factorio.com/" + resp.Thumbnail
     }
-    s.ChannelMessageSend(guildData.Channel, fmt.Sprintf("```%s```", changelog))
+	if thumbnail != "" {
+		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: thumbnail}
+	}
+	if guildData.Changelogs {
+		changelog := FormatChangelog(resp.Changelog, mod)
+		if changelog != "" {
+			embed.Description = changelog
+		}
+	}
+
+    s.ChannelMessageSendEmbed(guildData.Channel, embed)
 }
 
 func CompareCache(modArr ModArr) {
