@@ -334,10 +334,6 @@ func commands() []*discordgo.ApplicationCommand {
             }},
         },{
             Type: discordgo.ApplicationCommandOptionSubCommand,
-            Name: "all",
-            Description: "Clears the tracked list and enables mod update tracking",
-        },{
-            Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "enabled",
             Description: "Sets whether mod update notifications should be enabled",
             Options: []*discordgo.ApplicationCommandOption{{
@@ -530,19 +526,6 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 }
                 RespondEmbed(s, i, &discordgo.MessageEmbed{
                     Description: fmt.Sprintf("Added `%s` to tracked authors", value),
-                    Color: colors.Green,
-                })
-            case "all":
-                guildData.TrackAll = true
-                guildData.TrackEnabled = true
-                for k := range(guildData.TrackedMods) {
-                    delete(guildData.TrackedMods, k)
-                }
-                for k := range(guildData.TrackedAuthors) {
-                    delete(guildData.TrackedAuthors, k)
-                }
-                RespondEmbed(s, i, &discordgo.MessageEmbed{
-                    Description: "Now tracking all mods",
                     Color: colors.Green,
                 })
             case "enabled":
