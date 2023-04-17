@@ -547,6 +547,15 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 })
             case "enabled":
                 value := subCommand.Options[0].BoolValue()
+                if value && guildData.Channel == "" {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: No Update Channel",
+                        Description: "Please set an update channel with `/setchannel` before enabling mod update notifications.",
+                        Color: colors.Red,
+                    })
+                    return
+                }
+
                 guildData.TrackEnabled = value
 
                 var output string
@@ -589,33 +598,6 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 
                 RespondEmbed(s, i, &discordgo.MessageEmbed{
                     Description: fmt.Sprintf("%s changelog updates", output),
-                    Color: colors.Green,
-                })
-            case "updates":
-                value := subCommand.Options[0].BoolValue()
-
-                if value && guildData.Channel == "" {
-                    RespondEmbed(s, i, &discordgo.MessageEmbed{
-                        Title: "ERROR: No Update Channel",
-                        Description: "Please set an update channel with `/setchannel` before enabling mod update notifications.",
-                        Color: colors.Red,
-                    })
-                    return
-                }
-
-                guildData.TrackEnabled = value
-                guildMap[i.GuildID] = guildData
-                WriteJson("guilds.json", guildMap)
-
-                var output string
-                if value {
-                    output = "Enabled"
-                } else {
-                    output = "Disabled"
-                }
-
-                RespondEmbed(s, i, &discordgo.MessageEmbed{
-                    Description: fmt.Sprintf("%s mod update notifications", output),
                     Color: colors.Green,
                 })
             case "list":
