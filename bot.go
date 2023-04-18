@@ -780,7 +780,6 @@ func FormatChangelog(resp string, mod Mod) string {
     changelog := parts[1]
     if changelog == resp {return ""}
     changelog = strings.ReplaceAll(changelog, "\r", "")
-    changelog = strings.ReplaceAll(changelog, "\n  ", "\n")
     index := strings.Index(changelog, "Version: ")
     if index == -1 {return ""}
     index = index + len("Version: ")
@@ -794,6 +793,7 @@ func FormatChangelog(resp string, mod Mod) string {
         endIndex = strings.Index(changelog[index:], "\n")
         changelog = changelog[index+endIndex+1:]
     }
+    changelog = strings.ReplaceAll(changelog, "\n  ", "\n")
 	lines := strings.Split(changelog, "\n")
 	for i, line := range lines {
 		if len(line) > 0 && line[:1] != " " {
