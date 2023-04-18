@@ -82,7 +82,7 @@ type Colors struct {
 }
 
 var colors = Colors{
-    Aqua:   0x1abc,
+    Aqua:   0x1abc9c,
     Green:  0x57f287,
     Blue:   0x3498db,
     Purple: 0x9b59b6,
@@ -284,7 +284,7 @@ func RespondEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, embed *d
 
 func commands() []*discordgo.ApplicationCommand {
     manageServer := int64(32)
-    return []*discordgo.ApplicationCommand{{
+    return []*discordgo.ApplicationCommand{{ // mod
         Type: discordgo.ChatApplicationCommand,
         Name: "mod",
         Description: "Links a mod from the mod portal",
@@ -305,7 +305,7 @@ func commands() []*discordgo.ApplicationCommand {
             Description: "Version filter",
             Autocomplete: true,
         }},
-    },{
+    },{ // track
         Type: discordgo.ChatApplicationCommand,
         Name: "track",
         Description: "Adds mods to the list of tracked mods",
@@ -367,7 +367,7 @@ func commands() []*discordgo.ApplicationCommand {
             Name: "list",
             Description: "Lists the tracked mods and authors",
         }},
-    },{
+    },{ // untrack
         Type: discordgo.ChatApplicationCommand,
         Name: "untrack",
         Description: "Removes mods from the list of tracked mods",
@@ -794,6 +794,15 @@ func FormatChangelog(resp string, mod Mod) string {
         endIndex = strings.Index(changelog[index:], "\n")
         changelog = changelog[index+endIndex+1:]
     }
+	lines := strings.Split(changelog, "\n")
+	for i, line := range lines {
+		if len(line) > 0 && line[:1] != " " {
+			line = "**" + line + "**"
+			lines[i] = line
+		}
+	}
+	changelog = strings.Join(lines, "\n")
+	changelog = strings.ReplaceAll(changelog, "\n  ", "\u200b\n")
 	return changelog
 }
 
@@ -990,3 +999,4 @@ func main() {
         }
     }
 }
+
