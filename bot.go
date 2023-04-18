@@ -779,6 +779,7 @@ func FormatChangelog(resp string, mod Mod) string {
     if len(parts) == 1 {return ""}
     changelog := parts[1]
     if changelog == resp {return ""}
+    changelog = strings.ReplaceAll(changelog, "\r", "")
     changelog = strings.ReplaceAll(changelog, "\n  ", "\n")
     index := strings.Index(changelog, "Version: ")
     if index == -1 {return ""}
@@ -786,7 +787,6 @@ func FormatChangelog(resp string, mod Mod) string {
     endIndex := strings.Index(changelog[index:], "\n")
     if endIndex == -1 {return ""}
     version := changelog[index:index+endIndex]
-    version = strings.ReplaceAll(version, "\r", "")
     if version != mod.LatestRelease.Version {return ""}
     changelog = changelog[index+endIndex+1:]
     index = strings.Index(changelog, "Date: ")
@@ -802,7 +802,7 @@ func FormatChangelog(resp string, mod Mod) string {
 		}
 	}
 	changelog = strings.Join(lines, "\n")
-	changelog = strings.ReplaceAll(changelog, "\n  ", "\u200b\n")
+	changelog = strings.ReplaceAll(changelog, "\n  ", "\n\u200b")
 	return changelog
 }
 
