@@ -793,8 +793,12 @@ func FormatChangelog(resp string, mod Mod) string {
         endIndex = strings.Index(changelog[index:], "\n")
         changelog = changelog[index+endIndex+1:]
     }
-    changelog = strings.ReplaceAll(changelog, "\n  ", "\n")
 	lines := strings.Split(changelog, "\n")
+	for i, line := range(lines) {
+		if len(line) > 0 && line[:2] != "  " {
+			lines[i] = line[2:]
+		}
+	}
 	for i, line := range lines {
 		if len(line) > 0 && line[:1] != " " {
 			line = "**" + line + "**"
@@ -807,37 +811,26 @@ func FormatChangelog(resp string, mod Mod) string {
 }
 
 func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew bool) {
-    var title string
     var color int
     if isNew {
-        title = "New: %s"
         color = colors.Green
     } else {
-        title = "Updated: %s"
         color = colors.Blue
     }
 
 	embed := &discordgo.MessageEmbed{
 		URL: ModURL(mod.Name),
-        Title: Truncate(fmt.Sprintf(title, mod.Title), 256),
+        Title: Truncate(mod.Title, 256),
         Color: color,
-        Fields: []*discordgo.MessageEmbedField{
-            {
-                Name: "Author:",
-                Value: mod.Owner,
-                Inline: true,
-            },
-            {
-                Name: "Downloads:",
-                Value: strconv.FormatInt(mod.DownloadsCount, 10),
-                Inline: true,
-            },
-            {
-                Name: "Version:",
-                Value: mod.LatestRelease.Version,
-                Inline: true,
-            },
-        },
+        Fields: []*discordgo.MessageEmbedField{{
+			Name: "Author:",
+			Value: mod.Owner,
+			Inline: true,
+		},{
+			Name: "Version:",
+			Value: mod.LatestRelease.Version,
+			Inline: true,
+		}},
 	}
 
     var resp FullMod
@@ -852,7 +845,15 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
 	if guildData.Changelogs {
 		changelog := FormatChangelog(resp.Changelog, mod)
 		if changelog != "" {
-			embed.Description = changelog
+			embed.Fields = []*discordgo.MessageEmbedField{{
+				Name: "Author: " + mod.Owner,
+				Value: "",
+				Inline: true,
+			},{
+				Name: "Version: " + mod.LatestRelease.Version,
+				Value: "",
+				Inline: true,
+			}}
 		}
 	}
 
