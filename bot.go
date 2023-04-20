@@ -795,7 +795,7 @@ func FormatChangelog(resp string, mod Mod) string {
     }
 	lines := strings.Split(changelog, "\n")
 	for i, line := range(lines) {
-		if len(line) > 0 && line[:2] != "  " {
+		if len(line) > 0 && line[:2] == "  " {
 			lines[i] = line[2:]
 		}
 	}
@@ -845,6 +845,7 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
 	if guildData.Changelogs {
 		changelog := FormatChangelog(resp.Changelog, mod)
 		if changelog != "" {
+			embed.Description = changelog
 			embed.Fields = []*discordgo.MessageEmbedField{{
 				Name: "Author: " + mod.Owner,
 				Value: "",
