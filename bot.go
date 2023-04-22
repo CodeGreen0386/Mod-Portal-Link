@@ -334,6 +334,16 @@ func commands() []*discordgo.ApplicationCommand {
             }},
         },{
             Type: discordgo.ApplicationCommandOptionSubCommand,
+            Name: "all",
+            Description: "Sets whether all mods should be tracked",
+            Options: []*discordgo.ApplicationCommandOption{{
+                Type: discordgo.ApplicationCommandOptionBoolean,
+                Name: "enabled",
+                Description: "enabled",
+                Required: true,
+            }},
+        },{
+            Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "enabled",
             Description: "Sets whether mod update notifications should be enabled",
             Options: []*discordgo.ApplicationCommandOption{{
@@ -397,7 +407,7 @@ func commands() []*discordgo.ApplicationCommand {
         },{
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "all",
-            Description: "Removes everything from the tracked list and disables mod update tracking",
+            Description: "Removes everything from the tracked list",
         }},
     }}
 }
@@ -528,7 +538,22 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Description: fmt.Sprintf("Added `%s` to tracked authors", value),
                     Color: colors.Green,
                 })
-            case "enabled":
+            case "all":
+				value := subCommand.Options[0].BoolValue()
+                guildData.TrackAll = value
+
+                var output string
+                if value {
+                    output = "Enabled"
+                } else {
+                    output = "Disabled"
+                }
+
+                RespondEmbed(s, i, &discordgo.MessageEmbed{
+                    Description: fmt.Sprintf("%s tracking all mods", output),
+                    Color: colors.Green,
+                })
+			case "enabled":
                 value := subCommand.Options[0].BoolValue()
                 if value && guildData.Channel == "" {
                     RespondEmbed(s, i, &discordgo.MessageEmbed{
@@ -676,8 +701,6 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Color: colors.Green,
                 })
             case "all":
-                guildData.TrackAll = false
-                guildData.TrackEnabled = false
                 for k := range(guildData.TrackedMods) {
                     delete(guildData.TrackedMods, k)
                 }
@@ -800,7 +823,8 @@ func FormatChangelog(resp string, mod Mod) string {
 		}
 	}
 	for i, line := range lines {
-		if len(line) > 0 && line[:1] != " " {
+		l := len(line)
+		if l > 0 && line[:1] != " " && line[l-1:] == ":" {
 			line = "**" + line + "**"
 			lines[i] = line
 		}
@@ -1001,4 +1025,3 @@ func main() {
         }
     }
 }
-
