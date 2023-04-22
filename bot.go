@@ -550,7 +550,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 }
 
                 RespondEmbed(s, i, &discordgo.MessageEmbed{
-                    Description: fmt.Sprintf("%s tracking all mods", output),
+                    Description: fmt.Sprintf("%s tracking of all mods", output),
                     Color: colors.Green,
                 })
 			case "enabled":
