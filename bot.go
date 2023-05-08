@@ -803,6 +803,7 @@ func FormatChangelog(resp string, mod Mod) string {
     changelog := parts[1]
     if changelog == resp {return ""}
     changelog = strings.ReplaceAll(changelog, "\r", "")
+	changelog = strings.ReplaceAll(changelog, "__", "\\__")
     index := strings.Index(changelog, "Version: ")
     if index == -1 {return ""}
     index = index + len("Version: ")
@@ -906,14 +907,14 @@ func CompareCache(modArr ModArr) {
     if updated.Len() == 0 {return}
     sort.Sort(updated)
 
-    var guilds GuildMap
-    ReadJson("guilds.json", &guilds)
-    for _, guildData := range(guilds) {
+    var guildMap GuildMap
+    ReadJson("guilds.json", &guildMap)
+    for _, guildData := range(guildMap) {
         if !guildData.TrackEnabled {continue}
         if guildData.Channel == "" {continue}
         for _, mod := range(updated) {
-            isNew := newMods[mod.Name]
-            if isNew {
+            _, ok := newMods[mod.Name]
+            if ok {
                 if !(guildData.TrackAll || guildData.TrackedAuthors[mod.Owner]) {
                     if !guildData.TrackAll {
                         guildData.TrackedMods[(mod.Name)] = true
@@ -925,9 +926,10 @@ func CompareCache(modArr ModArr) {
                     continue
                 }
             }
-            UpdateMessageSend(s, guildData, mod, isNew)
+            UpdateMessageSend(s, guildData, mod, ok)
         }
     }
+	WriteJson("guilds.json", guildMap)
 }
 
 func UpdateCache() {
