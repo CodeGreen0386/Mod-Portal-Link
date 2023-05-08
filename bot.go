@@ -172,8 +172,12 @@ func Truncate(s string, max int) string {
 }
 
 func NewChoice(name, value string) *discordgo.ApplicationCommandOptionChoice{
+	s := strings.TrimLeft(name, " \t")
+	if s == "" {
+		s = value
+	}
     return &discordgo.ApplicationCommandOptionChoice{
-        Name: Truncate(name, 100),
+        Name: Truncate(s, 100),
         Value: value,
     }
 }
