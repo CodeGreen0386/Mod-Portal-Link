@@ -887,7 +887,10 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
 		}
 	}
 
-    s.ChannelMessageSendEmbed(guildData.Channel, embed)
+    _, err := s.ChannelMessageSendEmbed(guildData.Channel, embed)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func CompareCache(modArr ModArr) {
