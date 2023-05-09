@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,8 +46,9 @@ type Mod struct {
 
 type FullMod struct {
     *Mod
-    Thumbnail string
-    Changelog string
+    Thumbnail string `json:"thumbnail"`
+    Changelog string `json:"changelog"`
+	SourceURL string `json:"source_url"`
 }
 
 type LatestRelease struct {
@@ -801,11 +803,11 @@ func CacheMods(modArr ModArr) {
     }
 }
 
-func FormatChangelog(resp string, mod Mod) string {
-    parts := strings.Split(resp, strings.Repeat("-", 99))
+func FormatChangelog(resp FullMod, mod Mod) string {
+    parts := strings.Split(resp.Changelog, strings.Repeat("-", 99))
     if len(parts) == 1 {return ""}
     changelog := parts[1]
-    if changelog == resp {return ""}
+    if changelog == resp.Changelog {return ""}
     changelog = strings.ReplaceAll(changelog, "\r", "")
 	changelog = strings.ReplaceAll(changelog, "__", "\\__")
     index := strings.Index(changelog, "Version: ")
@@ -836,7 +838,13 @@ func FormatChangelog(resp string, mod Mod) string {
 	}
 	changelog = strings.Join(lines, "\n")
 	changelog = strings.ReplaceAll(changelog, "\n  ", "\n\u200b")
-	return changelog
+	if strings.Contains(resp.SourceURL, "https://github.com/") {
+		re := regexp.MustCompile(`#[0-9]+`)
+		changelog = re.ReplaceAllStringFunc(changelog, func(match string) string {
+			return fmt.Sprintf("[%s](%s/issues/%s)", match, resp.SourceURL, match[1:])
+		})
+	}
+	return Truncate(changelog, 4096)
 }
 
 func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew bool) {
@@ -872,7 +880,7 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
 		embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: thumbnail}
 	}
 	if guildData.Changelogs {
-		changelog := FormatChangelog(resp.Changelog, mod)
+		changelog := FormatChangelog(resp, mod)
 		if changelog != "" {
 			embed.Description = changelog
 			embed.Fields = []*discordgo.MessageEmbedField{{
