@@ -919,14 +919,16 @@ func CompareCache(modArr ModArr) {
         for _, mod := range(updated) {
             _, ok := newMods[mod.Name]
             if ok {
-                if !(guildData.TrackAll || guildData.TrackedAuthors[mod.Owner]) {
-                    if !guildData.TrackAll {
+                if !guildData.TrackAll {
+                    if _, author := guildData.TrackedAuthors[mod.Owner]; author {
                         guildData.TrackedMods[(mod.Name)] = true
-                    }
-                    continue
+                    } else {
+						continue
+					}
                 }
             } else {
-                if !(guildData.TrackAll || guildData.TrackedMods[mod.Name]) {
+				_, tracked := guildData.TrackedMods[mod.Name]
+                if !(guildData.TrackAll || tracked) {
                     continue
                 }
             }
