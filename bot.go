@@ -963,7 +963,10 @@ func UpdateCache() {
     }
 
     var data Response
-    if err := json.Unmarshal(body, &data); err != nil {panic(err)}
+    if err := json.Unmarshal(body, &data); err != nil {
+		log.Println(err)
+		return
+	}
     modArr := data.Results
     sort.Sort(modArr)
 
