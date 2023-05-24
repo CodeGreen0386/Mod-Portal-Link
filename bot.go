@@ -453,7 +453,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 return
             }
             if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
-                thumbnail = "https://assets-mod.factorio.com/" + resp.Thumbnail
+                thumbnail = "https://assets-mod.factorio.com" + resp.Thumbnail
             }
 
             RespondEmbed(s, i, &discordgo.MessageEmbed{
