@@ -114,9 +114,12 @@ func ReadJson(filename string, v any) {
 	for {
 		file, err := os.ReadFile(filename)
 		if err != nil {panic(err)}
-		if err := json.Unmarshal(file, v); err == nil {continue}
-		log.Println("Bad JSON read, retrying...")
-		time.Sleep(time.Second * 5)
+		if err := json.Unmarshal(file, v); err == nil {
+			return
+		} else {
+			log.Printf("Bad JSON read of %s, retrying...", filename)
+			time.Sleep(time.Second * 5)
+		}
 	}
 }
 
