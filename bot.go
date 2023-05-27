@@ -111,9 +111,13 @@ func init() {
 }
 
 func ReadJson(filename string, v any) {
-    file, err := os.ReadFile(filename)
-    if err != nil {panic(err)}
-    if err := json.Unmarshal(file, v); err != nil {panic(err)}
+	for {
+		file, err := os.ReadFile(filename)
+		if err != nil {panic(err)}
+		if err := json.Unmarshal(file, v); err == nil {continue}
+		log.Println("Bad JSON read, retrying...")
+		time.Sleep(time.Second * 5)
+	}
 }
 
 func WriteJson(filename string, v any) {
@@ -158,7 +162,7 @@ func AuthorFilter(modArr ModArr, data *discordgo.ApplicationCommandInteractionDa
     if author == "" {return modArr}
     if _, ok := authors[author]; !ok {return modArr}
     newList := make(ModArr, 0)
-    for _, mod := range modArr {
+    for _, mod := range(modArr) {
         if mod.Owner == author {
             newList = append(newList, mod)
         }
@@ -783,16 +787,14 @@ func UpdatedMod(a, b Mod) bool {
     return false
 }
 
-func ClearCache() {
+func CacheMods(modArr ModArr) {
     mods = make(map[string]Mod)
     authors = make(map[string]ModArr)
     versions = make(map[string]ModArr)
     for _, version := range(versionList) {
         versions[version] = make(ModArr, 0)
     }
-}
 
-func CacheMods(modArr ModArr) {
     for _, mod := range(modArr) {
         version := FormatVersion(mod.LatestRelease.InfoJson.FactorioVersion)
         if version == "" {continue}
@@ -825,19 +827,22 @@ func FormatChangelog(resp FullMod, mod Mod) string {
     }
 	lines := strings.Split(changelog, "\n")
 	for i, line := range(lines) {
-		if len(line) > 0 && line[:2] == "  " {
-			lines[i] = line[2:]
+		if strings.TrimSpace(line) == "" {
+			lines[i] = ""
+			continue
 		}
-	}
-	for i, line := range lines {
+		re := regexp.MustCompile(`^\s{0,4}`)
+		line = re.ReplaceAllString(line, "")
 		l := len(line)
-		if l > 0 && line[:1] != " " && line[l-1:] == ":" {
+		if line[:1] != " " && line[l-1:] == ":" {
 			line = "**" + line + "**"
-			lines[i] = line
 		}
+		lines[i] = line
 	}
 	changelog = strings.Join(lines, "\n")
-	changelog = strings.ReplaceAll(changelog, "\n  ", "\n\u200b")
+	re := regexp.MustCompile(`\n+`)
+	changelog = re.ReplaceAllString(changelog, "\n")
+	// changelog = strings.ReplaceAll(changelog, "\n  ", "\n\u200b")
 	if strings.Contains(resp.SourceURL, "https://github.com/") {
 		re := regexp.MustCompile(`#[0-9]+`)
 		changelog = re.ReplaceAllStringFunc(changelog, func(match string) string {
@@ -971,7 +976,6 @@ func UpdateCache() {
     sort.Sort(modArr)
 
     CompareCache(modArr)
-    ClearCache()
     CacheMods(modArr)
     WriteJson("mods.json", modArr)
     log.Println("Updated mods.json")
@@ -1041,7 +1045,7 @@ func main() {
     <-stop
     log.Println("Shutting down...")
 
-    for _, cmd := range createdCommands {
+    for _, cmd := range(createdCommands) {
         if err := s.ApplicationCommandDelete(s.State.User.ID, "", cmd.ID); err != nil {
             log.Fatalf("Cannot delete command %q: %v", cmd.Name, err)
         }
