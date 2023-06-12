@@ -472,12 +472,12 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 Fields: []*discordgo.MessageEmbedField{
                     {
                         Name: "",
-                        Value: fmt.Sprintf("Author: %s", mod.Owner),
+                        Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
                         Inline: true,
                     },
                     {
                         Name: "",
-                        Value: fmt.Sprintf("Downloads: %s", strconv.FormatInt(mod.DownloadsCount, 10)),
+                        Value: fmt.Sprintf("**Downloads:** %s", strconv.FormatInt(mod.DownloadsCount, 10)),
                         Inline: true,
                     },
                 },
@@ -869,7 +869,7 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
         Color: color,
         Fields: []*discordgo.MessageEmbedField{{
 			Name: "Author:",
-			Value: mod.Owner,
+			Value: fmt.Sprintf("[%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
 			Inline: true,
 		},{
 			Name: "Version:",
@@ -893,11 +893,11 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
 			embed.Description = changelog
 			embed.Fields = []*discordgo.MessageEmbedField{{
 				Name: "",
-				Value: "Author: " + mod.Owner,
+				Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
 				Inline: true,
 			},{
 				Name: "",
-				Value: "Version: " + mod.LatestRelease.Version,
+				Value: "**Version:** " + mod.LatestRelease.Version,
 				Inline: true,
 			}}
 		}
