@@ -471,13 +471,13 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 Color: colors.Gold,
                 Fields: []*discordgo.MessageEmbedField{
                     {
-                        Name: fmt.Sprintf("Author: %s", mod.Owner),
-                        Value: "",
+                        Name: "",
+                        Value: fmt.Sprintf("Author: %s", mod.Owner),
                         Inline: true,
                     },
                     {
-                        Name: fmt.Sprintf("Downloads: %s", strconv.FormatInt(mod.DownloadsCount, 10)),
-                        Value: "",
+                        Name: "",
+                        Value: fmt.Sprintf("Downloads: %s", strconv.FormatInt(mod.DownloadsCount, 10)),
                         Inline: true,
                     },
                 },
@@ -892,12 +892,12 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
 		if changelog != "" {
 			embed.Description = changelog
 			embed.Fields = []*discordgo.MessageEmbedField{{
-				Name: "Author: " + mod.Owner,
-				Value: "",
+				Name: "",
+				Value: "Author: " + mod.Owner,
 				Inline: true,
 			},{
-				Name: "Version: " + mod.LatestRelease.Version,
-				Value: "",
+				Name: "",
+				Value: "Version: " + mod.LatestRelease.Version,
 				Inline: true,
 			}}
 		}
