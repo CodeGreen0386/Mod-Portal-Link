@@ -592,7 +592,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 })
             case "set_channel":
                 channel := subCommand.Options[0].ChannelValue(s)
-                if channel.Type != 0 {
+                if channel.Type != 0 && channel.Type != 5 {
                     RespondEmbed(s, i, &discordgo.MessageEmbed{
                         Title: "ERROR: Invalid Channel Type",
                         Description: fmt.Sprintf("`%s` is not a text channel.", channel.Name),
