@@ -595,13 +595,32 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 if channel.Type != 0 && channel.Type != 5 {
                     RespondEmbed(s, i, &discordgo.MessageEmbed{
                         Title: "ERROR: Invalid Channel Type",
-                        Description: fmt.Sprintf("`%s` is not a text channel.", channel.Name),
+                        Description: fmt.Sprintf("<#%s> is not a text channel.", channel.ID),
                         Color: colors.Red,
                     })
                     return
                 }
-                guildData.Channel = channel.ID
 
+				permissions, err := s.State.UserChannelPermissions(s.State.User.ID, channel.ID)
+				if err != nil {
+					RespondEmbed(s, i, &discordgo.MessageEmbed{
+						Title: "ERROR: Unexpected error",
+						Description: "`" + err.Error() + "`",
+						Color: colors.Red,
+					})
+					return
+				}
+
+				if permissions & 0x800 == 0 {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: Invalid Message Send Permission",
+                        Description: fmt.Sprintf("Cannot send messages in <#%s>", channel.ID),
+                        Color: colors.Red,
+                    })
+                    return
+                }
+
+                guildData.Channel = channel.ID
                 RespondEmbed(s, i, &discordgo.MessageEmbed{
                     Description: fmt.Sprintf("Update channel set to <#%s>", channel.ID),
                     Color: colors.Green,
@@ -643,7 +662,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 authorOut := strings.Join(authorArr, ", ")
 
                 RespondEmbed(s, i, &discordgo.MessageEmbed{
-                    Description: fmt.Sprintf("Mods:\n%s\n\nAuthors:\n%s", modOut, authorOut),
+                    Description: fmt.Sprintf("**Mods:**\n%s\n\n**Authors:**\n%s", modOut, authorOut),
                     Color: colors.Gold,
                 })
             }
