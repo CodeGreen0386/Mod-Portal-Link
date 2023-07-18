@@ -629,6 +629,15 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     return
                 }
 
+				if permissions & 0x4000 == 0 {
+					RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: Invalid Permission",
+                        Description: fmt.Sprintf("Cannot embed links in <#%s>", channel.ID),
+                        Color: colors.Red,
+                    })
+                    return
+				}
+
                 guildData.Channel = channel.ID
                 RespondEmbed(s, i, &discordgo.MessageEmbed{
                     Description: fmt.Sprintf("Update channel set to <#%s>", channel.ID),
