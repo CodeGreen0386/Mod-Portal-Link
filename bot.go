@@ -611,9 +611,18 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 					return
 				}
 
+				if permissions & 0x400 == 0 {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: Invalid Permission",
+                        Description: fmt.Sprintf("Cannot view channel <#%s>", channel.ID),
+                        Color: colors.Red,
+                    })
+                    return
+                }
+
 				if permissions & 0x800 == 0 {
                     RespondEmbed(s, i, &discordgo.MessageEmbed{
-                        Title: "ERROR: Invalid Message Send Permission",
+                        Title: "ERROR: Invalid Permission",
                         Description: fmt.Sprintf("Cannot send messages in <#%s>", channel.ID),
                         Color: colors.Red,
                     })
