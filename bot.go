@@ -699,6 +699,11 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                         Description: "```" + err.Error() + "```",
                         Color: colors.Red,
                     })
+				} else {
+					RespondEmbed(s, i, &discordgo.MessageEmbed{
+						Description: "Mod update test successful",
+						Color: colors.Green,
+					})
 				}
             }
             guildMap[i.GuildID] = guildData
