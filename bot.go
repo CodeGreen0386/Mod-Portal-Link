@@ -323,7 +323,7 @@ func commands() []*discordgo.ApplicationCommand {
         Name: "track",
         Description: "Adds mods to the list of tracked mods",
         DefaultMemberPermissions: &manageServer,
-        Options: []*discordgo.ApplicationCommandOption{{
+        Options: []*discordgo.ApplicationCommandOption{{ // mod
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "mod",
             Description: "Adds a mod to the list of tracked mods",
@@ -334,7 +334,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{
+        },{ // author
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "author",
             Description: "Adds an author to the list of tracked authors",
@@ -345,7 +345,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{
+        },{ // all
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "all",
             Description: "Sets whether all mods should be tracked",
@@ -355,7 +355,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "enabled",
                 Required: true,
             }},
-        },{
+        },{ // enabled
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "enabled",
             Description: "Sets whether mod update notifications should be enabled",
@@ -365,7 +365,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "enabled",
                 Required: true,
             }},
-        },{
+        },{ // changelogs
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "changelogs",
             Description: "Sets whether the changelog should be shown for mod update messages",
@@ -375,7 +375,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "enabled",
                 Required: true,
             }},
-        },{
+        },{ // set_channel
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "set_channel",
             Description: "Sets the channel for mod update notifications",
@@ -385,17 +385,21 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "The channel to send update notifications to",
                 Required: true,
             }},
-        },{
+        },{ // list
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "list",
             Description: "Lists the tracked mods and authors",
-        }},
+        },{ // test
+			Type: discordgo.ApplicationCommandOptionSubCommand,
+			Name: "test",
+			Description: "Tests the mod update channel with an embed",
+		}},
     },{ // untrack
         Type: discordgo.ChatApplicationCommand,
         Name: "untrack",
         Description: "Removes mods from the list of tracked mods",
         DefaultMemberPermissions: &manageServer,
-        Options: []*discordgo.ApplicationCommandOption{{
+        Options: []*discordgo.ApplicationCommandOption{{ // mod
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "mod",
             Description: "Removes a mod from the list of tracked mods",
@@ -406,7 +410,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{
+        },{ // author
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "author",
             Description: "Removes an author from the list of tracked authors",
@@ -417,7 +421,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{
+        },{ // all
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "all",
             Description: "Removes everything from the tracked list",
@@ -683,6 +687,19 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Description: fmt.Sprintf("**Mods:**\n%s\n\n**Authors:**\n%s", modOut, authorOut),
                     Color: colors.Gold,
                 })
+			case "test":
+				embed := &discordgo.MessageEmbed{
+					Description: "Mod Update Test",
+					Color: colors.Green,
+				}
+				_, err := s.ChannelMessageSendEmbed(guildData.Channel, embed)
+				if err != nil {
+					RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: Failed to send test mod update",
+                        Description: "```" + err.Error() + "```",
+                        Color: colors.Red,
+                    })
+				}
             }
             guildMap[i.GuildID] = guildData
             WriteJson("guilds.json", guildMap)
