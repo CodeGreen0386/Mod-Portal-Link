@@ -609,7 +609,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 				}
 
 				for _, mod := range(list.Mods) {
-					if mod.Enabled {
+					if mod.Enabled && mod.Name != "base" {
 						guildData.TrackedMods[mod.Name] = true
 					}
 				}
