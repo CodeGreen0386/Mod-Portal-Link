@@ -1091,6 +1091,7 @@ func main() {
             ReadCache()
             for {
                 UpdateCache()
+				s.UpdateGameStatus(0, fmt.Sprintf("Updated <t:%d:R>", time.Now().Unix()))
                 time.Sleep(time.Minute * 5)
             }
         }()
