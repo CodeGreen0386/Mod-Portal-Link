@@ -61,6 +61,15 @@ type InfoJson struct {
     FactorioVersion string `json:"factorio_version"`
 }
 
+type ModList struct {
+	Mods []ModListMod `json:"mods"`
+}
+
+type ModListMod struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
+}
+
 var (
     s        *discordgo.Session
     mods     map[string]Mod
@@ -345,7 +354,17 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{ // all
+		},{ // file
+			Type: discordgo.ApplicationCommandOptionSubCommand,
+			Name: "file",
+			Description: "Adds enabled mods from a mod-list.json to the list of tracked mods",
+			Options: []*discordgo.ApplicationCommandOption{{
+				Type: discordgo.ApplicationCommandOptionAttachment,
+				Name: "mod-list",
+				Description: "mod-list.json file",
+				Required: true,
+			}},
+		},{ // all
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "all",
             Description: "Sets whether all mods should be tracked",
@@ -555,7 +574,51 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Description: fmt.Sprintf("Added `%s` to tracked authors", value),
                     Color: colors.Green,
                 })
-            case "all":
+            case "file":
+				attachmentID := subCommand.Options[0].StringValue()
+				attachmentURL := data.Resolved.Attachments[attachmentID].URL
+				resp, err := http.Get(attachmentURL)
+				if err != nil {
+					RespondEmbed(s, i, &discordgo.MessageEmbed{
+						Title: "ERROR: Invalid Response",
+						Description: fmt.Sprintf("Could not get response from %s", attachmentURL),
+						Color: colors.Red,
+					})
+					return
+				}
+
+				defer resp.Body.Close()
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					RespondEmbed(s, i, &discordgo.MessageEmbed{
+						Title: "ERROR: Invalid Body",
+						Description: "Failed to read response body",
+						Color: colors.Red,
+					})
+					return
+				}
+
+				var list ModList
+				if err := json.Unmarshal(body, &list); err != nil {
+					RespondEmbed(s, i, &discordgo.MessageEmbed{
+						Title: "ERROR: Invalid File",
+						Description: "Failed to process file",
+						Color: colors.Red,
+					})
+					return
+				}
+
+				for _, mod := range(list.Mods) {
+					if mod.Enabled {
+						guildData.TrackedMods[mod.Name] = true
+					}
+				}
+
+				RespondEmbed(s, i, &discordgo.MessageEmbed{
+					Description: fmt.Sprintf("Added enabled mods to the tracked list"),
+					Color: colors.Green,
+				})
+			case "all":
 				value := subCommand.Options[0].BoolValue()
                 guildData.TrackAll = value
 
