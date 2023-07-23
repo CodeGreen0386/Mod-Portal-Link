@@ -1040,6 +1040,18 @@ func UpdateCache() {
 }
 
 func ReadCache() {
+	var guildMap GuildMap
+    ReadJson("guilds.json", &guildMap)
+    for _, guild := range(s.State.Ready.Guilds) {
+        guildData, ok := guildMap[guild.ID]
+        if !ok {
+            guildData.TrackedAuthors = make(map[string]bool)
+            guildData.TrackedMods = make(map[string]bool)
+        }
+        guildMap[guild.ID] = guildData
+    }
+    WriteJson("guilds.json", guildMap)
+
     var modArr ModArr
     ReadJson("mods.json", &modArr)
     CacheMods(modArr)
@@ -1074,30 +1086,14 @@ func main() {
         log.Fatalf("Cannot register commands: %v", err)
     }
 
-    var guildMap GuildMap
-    ReadJson("guilds.json", &guildMap)
-    for _, guild := range(s.State.Ready.Guilds) {
-        guildData, ok := guildMap[guild.ID]
-        if !ok {
-            guildData.TrackedAuthors = make(map[string]bool)
-            guildData.TrackedMods = make(map[string]bool)
-        }
-        guildMap[guild.ID] = guildData
-    }
-    WriteJson("guilds.json", guildMap)
-
-    if true {
-        go func() {
-            ReadCache()
-            for {
-                UpdateCache()
-				s.UpdateGameStatus(0, fmt.Sprintf("Updated <t:%d:R>", time.Now().Unix()))
-                time.Sleep(time.Minute * 5)
-            }
-        }()
-    } else {
-        ReadCache()
-    }
+	go func() {
+		ReadCache()
+		for {
+			UpdateCache()
+			s.UpdateGameStatus(0, fmt.Sprintf("Updated <t:%d:R>", time.Now().Unix()))
+			time.Sleep(time.Minute * 5)
+		}
+	}()
 
     stop := make(chan os.Signal, 1)
     signal.Notify(stop, os.Interrupt)
