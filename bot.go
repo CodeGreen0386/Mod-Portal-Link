@@ -575,7 +575,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Color: colors.Green,
                 })
             case "file":
-				attachmentID := subCommand.Options[0].StringValue()
+				attachmentID := subCommand.Options[0].Value.(string)
 				attachmentURL := data.Resolved.Attachments[attachmentID].URL
 				resp, err := http.Get(attachmentURL)
 				if err != nil {
