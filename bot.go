@@ -591,13 +591,23 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			thumbnail := content[index:index2]
 
 			downloads := 0
-			description := ""
 			for _, mod := range(authorMods) {
-				// if mod.
 				downloads += mod.DownloadsCount
-				description += fmt.Sprintf(", [%s](%s)", mod.Title, ModURL(mod.Name))
 			}
-			description = description[2:]
+
+			var recentMods UpdatedMods
+			copy(recentMods, authorMods)
+			sort.Sort(recentMods)
+
+			description := "Recent releases:"
+			modTotal := len(recentMods)
+			if modTotal > 5 {
+				modTotal = 5
+			}
+			for i := 0; i < modTotal; i++ {
+				mod := recentMods[i]
+				description += fmt.Sprintf("\n- (%s)[%s]", mod.Title, ModURL(mod.Name))
+			}
 
 			RespondEmbed(s, i, &discordgo.MessageEmbed{
 				Title: value,
