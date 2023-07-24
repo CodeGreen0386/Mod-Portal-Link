@@ -39,7 +39,7 @@ type Mod struct {
     Title 		   string        `json:"title"`
     Owner 		   string        `json:"owner"`
     Summary 	   string        `json:"summary"`
-    DownloadsCount int64         `json:"downloads_count"`
+    DownloadsCount int           `json:"downloads_count"`
     Category       string        `json:"category"`
     LatestRelease  LatestRelease `json:"latest_release"`
 }
@@ -304,6 +304,15 @@ func RespondEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, embed *d
     })
 }
 
+func DefaultError(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	RespondEmbed(s, i, &discordgo.MessageEmbed{
+		Title: "ERROR: Process Failed",
+		Description: "There was an error processing your request. Please try again!",
+		Color: colors.Red,
+	})
+	return
+}
+
 func commands() []*discordgo.ApplicationCommand {
     manageServer := int64(32)
     return []*discordgo.ApplicationCommand{{ // mod
@@ -327,6 +336,17 @@ func commands() []*discordgo.ApplicationCommand {
             Description: "Version filter",
             Autocomplete: true,
         }},
+	},{ // author
+		Type: discordgo.ChatApplicationCommand,
+		Name: "author",
+		Description: "Links an author from the mod portal",
+		Options: []*discordgo.ApplicationCommandOption{{
+			Type: discordgo.ApplicationCommandOptionString,
+			Name: "author",
+			Description: "Author name",
+			Required: true,
+			Autocomplete: true,
+		}},
     },{ // track
         Type: discordgo.ChatApplicationCommand,
         Name: "track",
@@ -465,7 +485,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 
                 RespondEmbed(s, i, &discordgo.MessageEmbed{
                     Title: "ERROR: Invalid Mod Name",
-                    Description: fmt.Sprintf("The mod `%s` does not exist.\nVersion searched: `%s`", value, version),
+                    Description: fmt.Sprintf("The mod `%s` was not found.\nVersion searched: `%s`", value, version),
                     Color: colors.Red,
                 })
                 return
@@ -475,11 +495,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
             var thumbnail string
             err := RequestMod(value, &resp, false)
             if err != nil {
-                RespondEmbed(s, i, &discordgo.MessageEmbed{
-                    Title: "ERROR: Process Failed",
-                    Description: "There was an error processing your request. Please try again!",
-                    Color: colors.Red,
-                })
+				DefaultError(s, i)
                 return
             }
             if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
@@ -487,23 +503,20 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
             }
 
             RespondEmbed(s, i, &discordgo.MessageEmbed{
+				Title: Truncate(mod.Title, 256),
                 URL: ModURL(mod.Name),
-                Title: Truncate(mod.Title, 256),
                 Description: Truncate(mod.Summary, 2048),
                 Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
                 Color: colors.Gold,
-                Fields: []*discordgo.MessageEmbedField{
-                    {
-                        Name: "",
-                        Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
-                        Inline: true,
-                    },
-                    {
-                        Name: "",
-                        Value: fmt.Sprintf("**Downloads:** %s", strconv.FormatInt(mod.DownloadsCount, 10)),
-                        Inline: true,
-                    },
-                },
+                Fields: []*discordgo.MessageEmbedField{{
+					Name: "",
+					Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
+					Inline: true,
+				},{
+					Name: "",
+					Value: fmt.Sprintf("**Downloads:** %d", mod.DownloadsCount),
+					Inline: true,
+				}},
             })
         case discordgo.InteractionApplicationCommandAutocomplete:
             choices := []*discordgo.ApplicationCommandOptionChoice{}
@@ -530,6 +543,70 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
             RespondChoices(s, i, choices)
         }
     },
+	"author": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		data := i.ApplicationCommandData()
+		options := OptionsMap(&data)
+
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			value := options["author"].StringValue()
+
+			authorMods, ok := authors[value]
+			if !ok {
+				RespondEmbed(s, i, &discordgo.MessageEmbed{
+					Title: "ERROR: Invalid Author Name",
+                    Description: fmt.Sprintf("The author `%s` was not found.", value),
+                    Color: colors.Red,
+                })
+				return
+			}
+
+			URL := fmt.Sprintf("https://mods.factorio.com/user/%s", value)
+
+			resp, err := http.Get(URL)
+            if err != nil {
+				DefaultError(s, i)
+				return
+            }
+			defer resp.Body.Close()
+			html, err := io.ReadAll(resp.Body)
+			if err != nil {
+				DefaultError(s, i)
+				return
+			}
+			content := string(html)
+			index := strings.Index(content, "profile-image-dropzone")
+			index += strings.Index(content[index:], "https")
+			index2 := index + strings.Index(content[index:], "png") + 3
+			thumbnail := content[index:index2]
+
+			downloads := 0
+			description := ""
+			for _, mod := range(mods) {
+				downloads += mod.DownloadsCount
+				description += fmt.Sprintf(", [%s](%s)", mod.Title, ModURL(mod.Name))
+			}
+			description = description[2:]
+
+			RespondEmbed(s, i, &discordgo.MessageEmbed{
+				Title: value,
+				URL: URL,
+				Description: "",
+				Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
+				Color: colors.Gold,
+				Fields: []*discordgo.MessageEmbedField{{
+					Name: "",
+					Value: fmt.Sprintf("**Total Mods:** %d", len(authorMods)),
+					Inline: true,
+				},{
+					Name: "",
+					Value: fmt.Sprintf("**Total Downloads:** %d", downloads),
+					Inline: true,
+
+				}},
+			})
+		}
+	},
     "track": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
         data := i.ApplicationCommandData()
         switch i.Type {
@@ -1151,10 +1228,10 @@ func main() {
 
 	go func() {
 		ReadCache()
-		for {
-			UpdateCache()
-			time.Sleep(time.Minute * 5)
-		}
+		// for {
+		// 	UpdateCache()
+		// 	time.Sleep(time.Minute * 5)
+		// }
 	}()
 
     stop := make(chan os.Signal, 1)
