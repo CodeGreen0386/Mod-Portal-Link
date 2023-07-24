@@ -323,6 +323,11 @@ func RespondDefaultError(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	return
 }
 
+func ISOtoUnix(iso string) int64 {
+	timeValue, _ := time.Parse(time.RFC3339Nano, iso)
+	return timeValue.Unix()
+}
+
 func commands() []*discordgo.ApplicationCommand {
     manageServer := int64(32)
     return []*discordgo.ApplicationCommand{{ // mod
@@ -604,9 +609,14 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			if modTotal > 5 {
 				modTotal = 5
 			}
+
 			for i := 0; i < modTotal; i++ {
 				mod := recentMods[i]
-				description += fmt.Sprintf("\n- [%s](%s) %s", mod.Title, ModURL(mod.Name), mod.LatestRelease.Version)
+				timestamp := ""
+				if mod.LatestRelease.ReleasedAt != "" {
+					timestamp = fmt.Sprintf("<t:%d:R>", ISOtoUnix(mod.LatestRelease.ReleasedAt))
+				}
+				description += fmt.Sprintf("\n- [%s](%s) - %s - %s", mod.Title, ModURL(mod.Name), mod.LatestRelease.Version, timestamp)
 			}
 
 			RespondEmbed(s, i, &discordgo.MessageEmbed{
@@ -1258,12 +1268,12 @@ func main() {
         log.Fatalf("Cannot register commands: %v", err)
     }
 
+	ReadCache()
 	go func() {
-		ReadCache()
-		for {
-			UpdateCache()
-			time.Sleep(time.Minute * 5)
-		}
+		// for {
+		// 	UpdateCache()
+		// 	time.Sleep(time.Minute * 5)
+		// }
 	}()
 
     stop := make(chan os.Signal, 1)
