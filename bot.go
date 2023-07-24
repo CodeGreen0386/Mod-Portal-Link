@@ -595,18 +595,18 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 				downloads += mod.DownloadsCount
 			}
 
-			var recentMods UpdatedMods
+			modTotal := len(authorMods)
+			recentMods := make(RecentMods, modTotal)
 			copy(recentMods, authorMods)
 			sort.Sort(recentMods)
 
-			description := "Recent releases:"
-			modTotal := len(recentMods)
+			description := "**Recent releases:**"
 			if modTotal > 5 {
 				modTotal = 5
 			}
 			for i := 0; i < modTotal; i++ {
 				mod := recentMods[i]
-				description += fmt.Sprintf("\n- (%s)[%s]", mod.Title, ModURL(mod.Name))
+				description += fmt.Sprintf("\n- [%s](%s) %s", mod.Title, ModURL(mod.Name), mod.LatestRelease.Version)
 			}
 
 			RespondEmbed(s, i, &discordgo.MessageEmbed{
@@ -984,6 +984,13 @@ func (m UpdatedMods) Len() int {return len(m)}
 func (m UpdatedMods) Swap(a, b int) {m[a], m[b] = m[b], m[a]}
 func (m UpdatedMods) Less(a, b int) bool {
     return m[a].LatestRelease.ReleasedAt < m[b].LatestRelease.ReleasedAt
+}
+
+type RecentMods []Mod
+func (m RecentMods) Len() int {return len(m)}
+func (m RecentMods) Swap(a, b int) {m[a], m[b] = m[b], m[a]}
+func (m RecentMods) Less(a, b int) bool {
+    return m[a].LatestRelease.ReleasedAt > m[b].LatestRelease.ReleasedAt
 }
 
 func FormatVersion(input string) string {
