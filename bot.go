@@ -304,7 +304,7 @@ func RespondEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, embed *d
     })
 }
 
-func DefaultError(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func RespondDefaultError(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	RespondEmbed(s, i, &discordgo.MessageEmbed{
 		Title: "ERROR: Process Failed",
 		Description: "There was an error processing your request. Please try again!",
@@ -495,7 +495,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
             var thumbnail string
             err := RequestMod(value, &resp, false)
             if err != nil {
-				DefaultError(s, i)
+				RespondDefaultError(s, i)
                 return
             }
             if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
@@ -565,24 +565,25 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 
 			resp, err := http.Get(URL)
             if err != nil {
-				DefaultError(s, i)
+				RespondDefaultError(s, i)
 				return
             }
 			defer resp.Body.Close()
 			html, err := io.ReadAll(resp.Body)
 			if err != nil {
-				DefaultError(s, i)
+				RespondDefaultError(s, i)
 				return
 			}
 			content := string(html)
 			index := strings.Index(content, "profile-image-dropzone")
 			index += strings.Index(content[index:], "https")
-			index2 := index + strings.Index(content[index:], "png") + 3
+			index2 := index + strings.Index(content[index:], "\n") - 2
 			thumbnail := content[index:index2]
 
 			downloads := 0
 			description := ""
-			for _, mod := range(mods) {
+			for _, mod := range(authorMods) {
+				// if mod.
 				downloads += mod.DownloadsCount
 				description += fmt.Sprintf(", [%s](%s)", mod.Title, ModURL(mod.Name))
 			}
@@ -591,7 +592,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			RespondEmbed(s, i, &discordgo.MessageEmbed{
 				Title: value,
 				URL: URL,
-				Description: "",
+				Description: description,
 				Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
 				Color: colors.Gold,
 				Fields: []*discordgo.MessageEmbedField{{
@@ -605,6 +606,10 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 
 				}},
 			})
+		case discordgo.InteractionApplicationCommandAutocomplete:
+			value := options["author"].StringValue()
+			choices := AuthorAutocomplete(value)
+			RespondChoices(s, i, choices)
 		}
 	},
     "track": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
