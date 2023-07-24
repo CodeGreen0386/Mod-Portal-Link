@@ -1270,10 +1270,10 @@ func main() {
 
 	ReadCache()
 	go func() {
-		// for {
-		// 	UpdateCache()
-		// 	time.Sleep(time.Minute * 5)
-		// }
+		for {
+			UpdateCache()
+			time.Sleep(time.Minute * 5)
+		}
 	}()
 
     stop := make(chan os.Signal, 1)
