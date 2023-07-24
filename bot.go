@@ -215,19 +215,18 @@ func ModAutocomplete(modArr ModArr, value string) []*discordgo.ApplicationComman
     nameFirst  := []*discordgo.ApplicationCommandOptionChoice{}
     nameLast   := []*discordgo.ApplicationCommandOptionChoice{}
     for _, mod := range(modArr) {
-        title, name := strings.ToLower(mod.Title), strings.ToLower(mod.Name)
+		if len(titleFirst) == 25 {break}
         if value == "" {
-            titleFirst = append(titleFirst, NewChoice(mod.Title, mod.Name))
-            if len(titleFirst) == 25 {break}
+			titleFirst = append(titleFirst, NewChoice(mod.Title, mod.Name))
             continue
         }
 
+		title, name := strings.ToLower(mod.Title), strings.ToLower(mod.Name)
         titleIndex := strings.Index(title, value)
         if titleIndex >= 0 {
             newChoice := NewChoice(mod.Title, mod.Name)
             if titleIndex == 0 {
                 titleFirst = append(titleFirst, newChoice)
-                if len(titleFirst) == 25 {break}
             } else {
                 titleLast = append(titleLast, newChoice)
             }
@@ -253,18 +252,29 @@ func ModAutocomplete(modArr ModArr, value string) []*discordgo.ApplicationComman
 
 func AuthorAutocomplete(value string) []*discordgo.ApplicationCommandOptionChoice {
     value = strings.ToLower(value)
-    choices := []*discordgo.ApplicationCommandOptionChoice{}
-    for author, mods := range(authors) {
-        authorLow := strings.ToLower(author)
-        if len(choices) == 25 {break}
-        if value == "" || strings.Contains(authorLow, value) {
-            choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
-                Name: mods[0].Owner,
-                Value: author,
-            })
+	authorFirst := []*discordgo.ApplicationCommandOptionChoice{}
+	authorLast  := []*discordgo.ApplicationCommandOptionChoice{}
+    for author := range(authors) {
+        if len(authorFirst) == 25 {break}
+        if value == "" {
+			authorFirst = append(authorFirst, NewChoice(author, author))
+			continue
         }
+
+		name := strings.ToLower(author)
+		nameIndex := strings.Index(name, value)
+		if nameIndex >= 0 {
+			newChoice := NewChoice(author, author)
+			if nameIndex == 0 {
+				authorFirst = append(authorFirst, newChoice)
+			} else {
+				authorLast = append(authorLast, newChoice)
+			}
+		}
     }
-    return choices
+
+	authorFirst = MaxCombine(authorFirst, authorLast, 25)
+    return authorFirst
 }
 
 func OptionsMap(data *discordgo.ApplicationCommandInteractionData) map[string]*discordgo.ApplicationCommandInteractionDataOption {
