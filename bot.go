@@ -1301,12 +1301,12 @@ func main() {
     }
 
     ReadCache()
-    // go func() {
-    // 	for {
-    // 		UpdateCache()
-    // 		time.Sleep(time.Minute * 5)
-    // 	}
-    // }()
+    go func() {
+    	for {
+    		UpdateCache()
+    		time.Sleep(time.Minute * 5)
+    	}
+    }()
 
     stop := make(chan os.Signal, 1)
     signal.Notify(stop, os.Interrupt)
