@@ -1,21 +1,21 @@
 package main
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "io"
+    "log"
+    "net/http"
+    "os"
+    "os/signal"
+    "regexp"
+    "sort"
+    "strconv"
+    "strings"
+    "time"
 
-	"github.com/bwmarrin/discordgo"
+    "github.com/bwmarrin/discordgo"
 )
 
 type GuildMap map[string]GuildData
@@ -46,10 +46,10 @@ type Mod struct {
 
 type FullMod struct {
     *Mod
-	// Releases  []Release `json:"releases"`
+    // Releases  []Release `json:"releases"`
     Thumbnail string    `json:"thumbnail"`
     Changelog string    `json:"changelog"`
-	SourceURL string    `json:"source_url"`
+    SourceURL string    `json:"source_url"`
 }
 
 type LatestRelease struct {
@@ -63,12 +63,12 @@ type InfoJson struct {
 }
 
 type ModList struct {
-	Mods []ModListMod `json:"mods"`
+    Mods []ModListMod `json:"mods"`
 }
 
 type ModListMod struct {
-	Name    string `json:"name"`
-	Enabled bool   `json:"enabled"`
+    Name    string `json:"name"`
+    Enabled bool   `json:"enabled"`
 }
 
 var (
@@ -121,16 +121,16 @@ func init() {
 }
 
 func ReadJson(filename string, v any) {
-	for {
-		file, err := os.ReadFile(filename)
-		if err != nil {panic(err)}
-		if err := json.Unmarshal(file, v); err == nil {
-			return
-		} else {
-			log.Printf("Bad JSON read of %s, retrying...", filename)
-			time.Sleep(time.Second * 5)
-		}
-	}
+    for {
+        file, err := os.ReadFile(filename)
+        if err != nil {panic(err)}
+        if err := json.Unmarshal(file, v); err == nil {
+            return
+        } else {
+            log.Printf("Bad JSON read of %s, retrying...", filename)
+            time.Sleep(time.Second * 5)
+        }
+    }
 }
 
 func WriteJson(filename string, v any) {
@@ -191,10 +191,10 @@ func Truncate(s string, max int) string {
 }
 
 func NewChoice(name, value string) *discordgo.ApplicationCommandOptionChoice{
-	s := strings.TrimLeft(name, " \t")
-	if s == "" {
-		s = value
-	}
+    s := strings.TrimLeft(name, " \t")
+    if s == "" {
+        s = value
+    }
     return &discordgo.ApplicationCommandOptionChoice{
         Name: Truncate(s, 100),
         Value: value,
@@ -216,13 +216,13 @@ func ModAutocomplete(modArr ModArr, value string) []*discordgo.ApplicationComman
     nameFirst  := []*discordgo.ApplicationCommandOptionChoice{}
     nameLast   := []*discordgo.ApplicationCommandOptionChoice{}
     for _, mod := range(modArr) {
-		if len(titleFirst) == 25 {break}
+        if len(titleFirst) == 25 {break}
         if value == "" {
-			titleFirst = append(titleFirst, NewChoice(mod.Title, mod.Name))
+            titleFirst = append(titleFirst, NewChoice(mod.Title, mod.Name))
             continue
         }
 
-		title, name := strings.ToLower(mod.Title), strings.ToLower(mod.Name)
+        title, name := strings.ToLower(mod.Title), strings.ToLower(mod.Name)
         titleIndex := strings.Index(title, value)
         if titleIndex >= 0 {
             newChoice := NewChoice(mod.Title, mod.Name)
@@ -253,28 +253,28 @@ func ModAutocomplete(modArr ModArr, value string) []*discordgo.ApplicationComman
 
 func AuthorAutocomplete(value string) []*discordgo.ApplicationCommandOptionChoice {
     value = strings.ToLower(value)
-	authorFirst := []*discordgo.ApplicationCommandOptionChoice{}
-	authorLast  := []*discordgo.ApplicationCommandOptionChoice{}
+    authorFirst := []*discordgo.ApplicationCommandOptionChoice{}
+    authorLast  := []*discordgo.ApplicationCommandOptionChoice{}
     for author := range(authors) {
         if len(authorFirst) == 25 {break}
         if value == "" {
-			authorFirst = append(authorFirst, NewChoice(author, author))
-			continue
+            authorFirst = append(authorFirst, NewChoice(author, author))
+            continue
         }
 
-		name := strings.ToLower(author)
-		nameIndex := strings.Index(name, value)
-		if nameIndex >= 0 {
-			newChoice := NewChoice(author, author)
-			if nameIndex == 0 {
-				authorFirst = append(authorFirst, newChoice)
-			} else {
-				authorLast = append(authorLast, newChoice)
-			}
-		}
+        name := strings.ToLower(author)
+        nameIndex := strings.Index(name, value)
+        if nameIndex >= 0 {
+            newChoice := NewChoice(author, author)
+            if nameIndex == 0 {
+                authorFirst = append(authorFirst, newChoice)
+            } else {
+                authorLast = append(authorLast, newChoice)
+            }
+        }
     }
 
-	authorFirst = MaxCombine(authorFirst, authorLast, 25)
+    authorFirst = MaxCombine(authorFirst, authorLast, 25)
     return authorFirst
 }
 
@@ -316,17 +316,17 @@ func RespondEmbed(s *discordgo.Session, i *discordgo.InteractionCreate, embed *d
 }
 
 func RespondDefaultError(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	RespondEmbed(s, i, &discordgo.MessageEmbed{
-		Title: "ERROR: Process Failed",
-		Description: "There was an error processing your request. Please try again!",
-		Color: colors.Red,
-	})
-	return
+    RespondEmbed(s, i, &discordgo.MessageEmbed{
+        Title: "ERROR: Process Failed",
+        Description: "There was an error processing your request. Please try again!",
+        Color: colors.Red,
+    })
+    return
 }
 
 func ISOtoUnix(iso string) int64 {
-	timeValue, _ := time.Parse(time.RFC3339Nano, iso)
-	return timeValue.Unix()
+    timeValue, _ := time.Parse(time.RFC3339Nano, iso)
+    return timeValue.Unix()
 }
 
 func commands() []*discordgo.ApplicationCommand {
@@ -352,29 +352,29 @@ func commands() []*discordgo.ApplicationCommand {
             Description: "Version filter",
             Autocomplete: true,
         },{
-			Type: discordgo.ApplicationCommandOptionString,
-			Name: "options",
-			Description: "Options to display different information",
-			Choices: []*discordgo.ApplicationCommandOptionChoice{{
-				Name: "Changelog",
-				Value: "changelog",
-			},{
-				Name: "Dependencies",
-				Value: "dependencies",
-			}},
-		}},
-	},{ // author
-		Type: discordgo.ChatApplicationCommand,
-		Name: "author",
-		Description: "Links an author from the mod portal",
-		Options: []*discordgo.ApplicationCommandOption{{
-			Type: discordgo.ApplicationCommandOptionString,
-			Name: "author",
-			Description: "Author name",
-			Required: true,
-			Autocomplete: true,
-		}},
-	},{ // track
+            Type: discordgo.ApplicationCommandOptionString,
+            Name: "options",
+            Description: "Options to display different information",
+            Choices: []*discordgo.ApplicationCommandOptionChoice{{
+                Name: "Changelog",
+                Value: "changelog",
+            },{
+                Name: "Dependencies",
+                Value: "dependencies",
+            }},
+        }},
+    },{ // author
+        Type: discordgo.ChatApplicationCommand,
+        Name: "author",
+        Description: "Links an author from the mod portal",
+        Options: []*discordgo.ApplicationCommandOption{{
+            Type: discordgo.ApplicationCommandOptionString,
+            Name: "author",
+            Description: "Author name",
+            Required: true,
+            Autocomplete: true,
+        }},
+    },{ // track
         Type: discordgo.ChatApplicationCommand,
         Name: "track",
         Description: "Adds mods to the list of tracked mods",
@@ -401,17 +401,17 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-		},{ // file
-			Type: discordgo.ApplicationCommandOptionSubCommand,
-			Name: "file",
-			Description: "Adds enabled mods from a mod-list.json to the list of tracked mods",
-			Options: []*discordgo.ApplicationCommandOption{{
-				Type: discordgo.ApplicationCommandOptionAttachment,
-				Name: "mod-list",
-				Description: "mod-list.json file",
-				Required: true,
-			}},
-		},{ // all
+        },{ // file
+            Type: discordgo.ApplicationCommandOptionSubCommand,
+            Name: "file",
+            Description: "Adds enabled mods from a mod-list.json to the list of tracked mods",
+            Options: []*discordgo.ApplicationCommandOption{{
+                Type: discordgo.ApplicationCommandOptionAttachment,
+                Name: "mod-list",
+                Description: "mod-list.json file",
+                Required: true,
+            }},
+        },{ // all
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "all",
             Description: "Sets whether all mods should be tracked",
@@ -456,10 +456,10 @@ func commands() []*discordgo.ApplicationCommand {
             Name: "list",
             Description: "Lists the tracked mods and authors",
         },{ // test
-			Type: discordgo.ApplicationCommandOptionSubCommand,
-			Name: "test",
-			Description: "Tests the mod update channel with an embed",
-		}},
+            Type: discordgo.ApplicationCommandOptionSubCommand,
+            Name: "test",
+            Description: "Tests the mod update channel with an embed",
+        }},
     },{ // untrack
         Type: discordgo.ChatApplicationCommand,
         Name: "untrack",
@@ -522,7 +522,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
             var thumbnail string
             err := RequestMod(value, &resp, false)
             if err != nil {
-				RespondDefaultError(s, i)
+                RespondDefaultError(s, i)
                 return
             }
             if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
@@ -539,26 +539,26 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 Inline: true,
             }}
 
-			description := Truncate(mod.Summary, 2048)
-			if displayOptions, ok := options["options"]; ok {
-				var resp FullMod
-				RequestMod(mod.Name, &resp, true)
-				switch displayOptions.StringValue() {
-				case "changelog":
-					description = FormatChangelog(resp, mod)
-					if description == "" {
-						description = fmt.Sprintf("No changelog for latest release.")
-					}
+            description := Truncate(mod.Summary, 2048)
+            if displayOptions, ok := options["options"]; ok {
+                var resp FullMod
+                RequestMod(mod.Name, &resp, true)
+                switch displayOptions.StringValue() {
+                case "changelog":
+                    description = FormatChangelog(resp, mod)
+                    if description == "" {
+                        description = fmt.Sprintf("No changelog for latest release.")
+                    }
                     fields[1].Value = fmt.Sprintf("**Version:** %s", mod.LatestRelease.Version)
-				case "dependencies":
-					// for _, otherMod := range(mods) {
-					// 	otherMod.Releases
-					// }
-				}
-			}
+                case "dependencies":
+                    // for _, otherMod := range(mods) {
+                    // 	otherMod.Releases
+                    // }
+                }
+            }
 
             RespondEmbed(s, i, &discordgo.MessageEmbed{
-				Title: Truncate(mod.Title, 256),
+                Title: Truncate(mod.Title, 256),
                 URL: ModURL(mod.Name),
                 Description: description,
                 Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
@@ -590,90 +590,90 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
             RespondChoices(s, i, choices)
         }
     },
-	"author": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		data := i.ApplicationCommandData()
-		options := OptionsMap(&data)
+    "author": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+        data := i.ApplicationCommandData()
+        options := OptionsMap(&data)
 
-		switch i.Type {
-		case discordgo.InteractionApplicationCommand:
-			value := options["author"].StringValue()
+        switch i.Type {
+        case discordgo.InteractionApplicationCommand:
+            value := options["author"].StringValue()
 
-			authorMods, ok := authors[value]
-			if !ok {
-				RespondEmbed(s, i, &discordgo.MessageEmbed{
-					Title: "ERROR: Invalid Author Name",
+            authorMods, ok := authors[value]
+            if !ok {
+                RespondEmbed(s, i, &discordgo.MessageEmbed{
+                    Title: "ERROR: Invalid Author Name",
                     Description: fmt.Sprintf("The author `%s` was not found.", value),
                     Color: colors.Red,
                 })
-				return
-			}
-
-			URL := fmt.Sprintf("https://mods.factorio.com/user/%s", value)
-
-			resp, err := http.Get(URL)
-            if err != nil {
-				RespondDefaultError(s, i)
-				return
+                return
             }
-			defer resp.Body.Close()
-			html, err := io.ReadAll(resp.Body)
-			if err != nil {
-				RespondDefaultError(s, i)
-				return
-			}
-			content := string(html)
-			index := strings.Index(content, "profile-image-dropzone")
-			index += strings.Index(content[index:], "https")
-			index2 := index + strings.Index(content[index:], "\n") - 2
-			thumbnail := content[index:index2]
 
-			downloads := 0
-			for _, mod := range(authorMods) {
-				downloads += mod.DownloadsCount
-			}
+            URL := fmt.Sprintf("https://mods.factorio.com/user/%s", value)
 
-			modTotal := len(authorMods)
-			recentMods := make(RecentMods, modTotal)
-			copy(recentMods, authorMods)
-			sort.Sort(recentMods)
+            resp, err := http.Get(URL)
+            if err != nil {
+                RespondDefaultError(s, i)
+                return
+            }
+            defer resp.Body.Close()
+            html, err := io.ReadAll(resp.Body)
+            if err != nil {
+                RespondDefaultError(s, i)
+                return
+            }
+            content := string(html)
+            index := strings.Index(content, "profile-image-dropzone")
+            index += strings.Index(content[index:], "https")
+            index2 := index + strings.Index(content[index:], "\n") - 2
+            thumbnail := content[index:index2]
 
-			description := "**Recent releases:**"
-			if modTotal > 5 {
-				modTotal = 5
-			}
+            downloads := 0
+            for _, mod := range(authorMods) {
+                downloads += mod.DownloadsCount
+            }
 
-			for i := 0; i < modTotal; i++ {
-				mod := recentMods[i]
-				timestamp := ""
-				if mod.LatestRelease.ReleasedAt != "" {
-					timestamp = fmt.Sprintf("<t:%d:R>", ISOtoUnix(mod.LatestRelease.ReleasedAt))
-				}
-				description += fmt.Sprintf("\n- [%s](%s) - %s - %s", mod.Title, ModURL(mod.Name), mod.LatestRelease.Version, timestamp)
-			}
+            modTotal := len(authorMods)
+            recentMods := make(RecentMods, modTotal)
+            copy(recentMods, authorMods)
+            sort.Sort(recentMods)
 
-			RespondEmbed(s, i, &discordgo.MessageEmbed{
-				Title: value,
-				URL: URL,
-				Description: description,
-				Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
-				Color: colors.Gold,
-				Fields: []*discordgo.MessageEmbedField{{
-					Name: "",
-					Value: fmt.Sprintf("**Total Mods:** %d", len(authorMods)),
-					Inline: true,
-				},{
-					Name: "",
-					Value: fmt.Sprintf("**Total Downloads:** %d", downloads),
-					Inline: true,
+            description := "**Recent releases:**"
+            if modTotal > 5 {
+                modTotal = 5
+            }
 
-				}},
-			})
-		case discordgo.InteractionApplicationCommandAutocomplete:
-			value := options["author"].StringValue()
-			choices := AuthorAutocomplete(value)
-			RespondChoices(s, i, choices)
-		}
-	},
+            for i := 0; i < modTotal; i++ {
+                mod := recentMods[i]
+                timestamp := ""
+                if mod.LatestRelease.ReleasedAt != "" {
+                    timestamp = fmt.Sprintf("<t:%d:R>", ISOtoUnix(mod.LatestRelease.ReleasedAt))
+                }
+                description += fmt.Sprintf("\n- [%s](%s) - %s - %s", mod.Title, ModURL(mod.Name), mod.LatestRelease.Version, timestamp)
+            }
+
+            RespondEmbed(s, i, &discordgo.MessageEmbed{
+                Title: value,
+                URL: URL,
+                Description: description,
+                Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
+                Color: colors.Gold,
+                Fields: []*discordgo.MessageEmbedField{{
+                    Name: "",
+                    Value: fmt.Sprintf("**Total Mods:** %d", len(authorMods)),
+                    Inline: true,
+                },{
+                    Name: "",
+                    Value: fmt.Sprintf("**Total Downloads:** %d", downloads),
+                    Inline: true,
+
+                }},
+            })
+        case discordgo.InteractionApplicationCommandAutocomplete:
+            value := options["author"].StringValue()
+            choices := AuthorAutocomplete(value)
+            RespondChoices(s, i, choices)
+        }
+    },
     "track": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
         data := i.ApplicationCommandData()
         switch i.Type {
@@ -719,51 +719,51 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Color: colors.Green,
                 })
             case "file":
-				attachmentID := subCommand.Options[0].Value.(string)
-				attachmentURL := data.Resolved.Attachments[attachmentID].URL
-				resp, err := http.Get(attachmentURL)
-				if err != nil {
-					RespondEmbed(s, i, &discordgo.MessageEmbed{
-						Title: "ERROR: Invalid Response",
-						Description: fmt.Sprintf("Could not get response from %s", attachmentURL),
-						Color: colors.Red,
-					})
-					return
-				}
+                attachmentID := subCommand.Options[0].Value.(string)
+                attachmentURL := data.Resolved.Attachments[attachmentID].URL
+                resp, err := http.Get(attachmentURL)
+                if err != nil {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: Invalid Response",
+                        Description: fmt.Sprintf("Could not get response from %s", attachmentURL),
+                        Color: colors.Red,
+                    })
+                    return
+                }
 
-				defer resp.Body.Close()
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					RespondEmbed(s, i, &discordgo.MessageEmbed{
-						Title: "ERROR: Invalid Body",
-						Description: "Failed to read response body",
-						Color: colors.Red,
-					})
-					return
-				}
+                defer resp.Body.Close()
+                body, err := io.ReadAll(resp.Body)
+                if err != nil {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: Invalid Body",
+                        Description: "Failed to read response body",
+                        Color: colors.Red,
+                    })
+                    return
+                }
 
-				var list ModList
-				if err := json.Unmarshal(body, &list); err != nil {
-					RespondEmbed(s, i, &discordgo.MessageEmbed{
-						Title: "ERROR: Invalid File",
-						Description: "Failed to process file",
-						Color: colors.Red,
-					})
-					return
-				}
+                var list ModList
+                if err := json.Unmarshal(body, &list); err != nil {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: Invalid File",
+                        Description: "Failed to process file",
+                        Color: colors.Red,
+                    })
+                    return
+                }
 
-				for _, mod := range(list.Mods) {
-					if mod.Enabled && mod.Name != "base" {
-						guildData.TrackedMods[mod.Name] = true
-					}
-				}
+                for _, mod := range(list.Mods) {
+                    if mod.Enabled && mod.Name != "base" {
+                        guildData.TrackedMods[mod.Name] = true
+                    }
+                }
 
-				RespondEmbed(s, i, &discordgo.MessageEmbed{
-					Description: fmt.Sprintf("Added enabled mods to the tracked list"),
-					Color: colors.Green,
-				})
-			case "all":
-				value := subCommand.Options[0].BoolValue()
+                RespondEmbed(s, i, &discordgo.MessageEmbed{
+                    Description: fmt.Sprintf("Added enabled mods to the tracked list"),
+                    Color: colors.Green,
+                })
+            case "all":
+                value := subCommand.Options[0].BoolValue()
                 guildData.TrackAll = value
 
                 var output string
@@ -777,7 +777,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Description: fmt.Sprintf("%s tracking of all mods", output),
                     Color: colors.Green,
                 })
-			case "enabled":
+            case "enabled":
                 value := subCommand.Options[0].BoolValue()
                 if value && guildData.Channel == "" {
                     RespondEmbed(s, i, &discordgo.MessageEmbed{
@@ -812,17 +812,17 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     return
                 }
 
-				permissions, err := s.State.UserChannelPermissions(s.State.User.ID, channel.ID)
-				if err != nil {
-					RespondEmbed(s, i, &discordgo.MessageEmbed{
-						Title: "ERROR: Unexpected error",
-						Description: "`" + err.Error() + "`",
-						Color: colors.Red,
-					})
-					return
-				}
+                permissions, err := s.State.UserChannelPermissions(s.State.User.ID, channel.ID)
+                if err != nil {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Title: "ERROR: Unexpected error",
+                        Description: "`" + err.Error() + "`",
+                        Color: colors.Red,
+                    })
+                    return
+                }
 
-				if permissions & 0x400 == 0 {
+                if permissions & 0x400 == 0 {
                     RespondEmbed(s, i, &discordgo.MessageEmbed{
                         Title: "ERROR: Invalid Permission",
                         Description: fmt.Sprintf("Cannot view channel <#%s>", channel.ID),
@@ -831,7 +831,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     return
                 }
 
-				if permissions & 0x800 == 0 {
+                if permissions & 0x800 == 0 {
                     RespondEmbed(s, i, &discordgo.MessageEmbed{
                         Title: "ERROR: Invalid Permission",
                         Description: fmt.Sprintf("Cannot send messages in <#%s>", channel.ID),
@@ -840,14 +840,14 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     return
                 }
 
-				if permissions & 0x4000 == 0 {
-					RespondEmbed(s, i, &discordgo.MessageEmbed{
+                if permissions & 0x4000 == 0 {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
                         Title: "ERROR: Invalid Permission",
                         Description: fmt.Sprintf("Cannot embed links in <#%s>", channel.ID),
                         Color: colors.Red,
                     })
                     return
-				}
+                }
 
                 guildData.Channel = channel.ID
                 RespondEmbed(s, i, &discordgo.MessageEmbed{
@@ -894,24 +894,24 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Description: fmt.Sprintf("**Mods:**\n%s\n\n**Authors:**\n%s", modOut, authorOut),
                     Color: colors.Gold,
                 })
-			case "test":
-				embed := &discordgo.MessageEmbed{
-					Description: "Mod Update Test",
-					Color: colors.Green,
-				}
-				_, err := s.ChannelMessageSendEmbed(guildData.Channel, embed)
-				if err != nil {
-					RespondEmbed(s, i, &discordgo.MessageEmbed{
+            case "test":
+                embed := &discordgo.MessageEmbed{
+                    Description: "Mod Update Test",
+                    Color: colors.Green,
+                }
+                _, err := s.ChannelMessageSendEmbed(guildData.Channel, embed)
+                if err != nil {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
                         Title: "ERROR: Failed to send test mod update",
                         Description: "```" + err.Error() + "```",
                         Color: colors.Red,
                     })
-				} else {
-					RespondEmbed(s, i, &discordgo.MessageEmbed{
-						Description: "Mod update test successful",
-						Color: colors.Green,
-					})
-				}
+                } else {
+                    RespondEmbed(s, i, &discordgo.MessageEmbed{
+                        Description: "Mod update test successful",
+                        Color: colors.Green,
+                    })
+                }
             }
             guildMap[i.GuildID] = guildData
             WriteJson("guilds.json", guildMap)
@@ -1087,7 +1087,7 @@ func FormatChangelog(resp FullMod, mod Mod) string {
     changelog := parts[1]
     if changelog == resp.Changelog {return ""}
     changelog = strings.ReplaceAll(changelog, "\r", "")
-	changelog = strings.ReplaceAll(changelog, "__", "\\__")
+    changelog = strings.ReplaceAll(changelog, "__", "\\__")
     index := strings.Index(changelog, "Version: ")
     if index == -1 {return ""}
     index = index + len("Version: ")
@@ -1101,31 +1101,31 @@ func FormatChangelog(resp FullMod, mod Mod) string {
         endIndex = strings.Index(changelog[index:], "\n")
         changelog = changelog[index+endIndex+1:]
     }
-	lines := strings.Split(changelog, "\n")
-	for i, line := range(lines) {
-		if strings.TrimSpace(line) == "" {
-			lines[i] = ""
-			continue
-		}
-		re := regexp.MustCompile(`^\s{0,4}`)
-		line = re.ReplaceAllString(line, "")
-		l := len(line)
-		if line[:1] != " " && line[l-1:] == ":" {
-			line = "**" + line + "**"
-		}
-		lines[i] = line
-	}
-	changelog = strings.Join(lines, "\n")
-	re := regexp.MustCompile(`\n+`)
-	changelog = re.ReplaceAllString(changelog, "\n")
-	// changelog = strings.ReplaceAll(changelog, "\n  ", "\n\u200b")
-	if strings.Contains(resp.SourceURL, "https://github.com/") {
-		re := regexp.MustCompile(`#[0-9]+`)
-		changelog = re.ReplaceAllStringFunc(changelog, func(match string) string {
-			return fmt.Sprintf("[%s](%s/issues/%s)", match, resp.SourceURL, match[1:])
-		})
-	}
-	return Truncate(changelog, 4096)
+    lines := strings.Split(changelog, "\n")
+    for i, line := range(lines) {
+        if strings.TrimSpace(line) == "" {
+            lines[i] = ""
+            continue
+        }
+        re := regexp.MustCompile(`^\s{0,4}`)
+        line = re.ReplaceAllString(line, "")
+        l := len(line)
+        if line[:1] != " " && line[l-1:] == ":" {
+            line = "**" + line + "**"
+        }
+        lines[i] = line
+    }
+    changelog = strings.Join(lines, "\n")
+    re := regexp.MustCompile(`\n+`)
+    changelog = re.ReplaceAllString(changelog, "\n")
+    // changelog = strings.ReplaceAll(changelog, "\n  ", "\n\u200b")
+    if strings.Contains(resp.SourceURL, "https://github.com/") {
+        re := regexp.MustCompile(`#[0-9]+`)
+        changelog = re.ReplaceAllStringFunc(changelog, func(match string) string {
+            return fmt.Sprintf("[%s](%s/issues/%s)", match, resp.SourceURL, match[1:])
+        })
+    }
+    return Truncate(changelog, 4096)
 }
 
 func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew bool) {
@@ -1136,46 +1136,46 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
         color = colors.Blue
     }
 
-	embed := &discordgo.MessageEmbed{
-		URL: ModURL(mod.Name),
+    embed := &discordgo.MessageEmbed{
+        URL: ModURL(mod.Name),
         Title: Truncate(mod.Title, 256),
         Color: color,
         Fields: []*discordgo.MessageEmbedField{{
-			Name: "Author:",
-			Value: fmt.Sprintf("[%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
-			Inline: true,
-		},{
-			Name: "Version:",
-			Value: mod.LatestRelease.Version,
-			Inline: true,
-		}},
-	}
+            Name: "Author:",
+            Value: fmt.Sprintf("[%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
+            Inline: true,
+        },{
+            Name: "Version:",
+            Value: mod.LatestRelease.Version,
+            Inline: true,
+        }},
+    }
 
     var resp FullMod
     RequestMod(mod.Name, &resp, true)
     if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
         embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://assets-mod.factorio.com/" + resp.Thumbnail}
     }
-	if guildData.Changelogs {
-		changelog := FormatChangelog(resp, mod)
-		if changelog != "" {
-			embed.Description = changelog
-			embed.Fields = []*discordgo.MessageEmbedField{{
-				Name: "",
-				Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
-				Inline: true,
-			},{
-				Name: "",
-				Value: "**Version:** " + mod.LatestRelease.Version,
-				Inline: true,
-			}}
-		}
-	}
+    if guildData.Changelogs {
+        changelog := FormatChangelog(resp, mod)
+        if changelog != "" {
+            embed.Description = changelog
+            embed.Fields = []*discordgo.MessageEmbedField{{
+                Name: "",
+                Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
+                Inline: true,
+            },{
+                Name: "",
+                Value: "**Version:** " + mod.LatestRelease.Version,
+                Inline: true,
+            }}
+        }
+    }
 
     _, err := s.ChannelMessageSendEmbed(guildData.Channel, embed)
-	if err != nil {
-		log.Println(err)
-	}
+    if err != nil {
+        log.Println(err)
+    }
 }
 
 func CompareCache(modArr ModArr) {
@@ -1211,11 +1211,11 @@ func CompareCache(modArr ModArr) {
                     if _, author := guildData.TrackedAuthors[mod.Owner]; author {
                         guildData.TrackedMods[(mod.Name)] = true
                     } else {
-						continue
-					}
+                        continue
+                    }
                 }
             } else {
-				_, tracked := guildData.TrackedMods[mod.Name]
+                _, tracked := guildData.TrackedMods[mod.Name]
                 if !(guildData.TrackAll || tracked) {
                     continue
                 }
@@ -1223,7 +1223,7 @@ func CompareCache(modArr ModArr) {
             UpdateMessageSend(s, guildData, mod, ok)
         }
     }
-	WriteJson("guilds.json", guildMap)
+    WriteJson("guilds.json", guildMap)
 }
 
 func UpdateCache() {
@@ -1241,9 +1241,9 @@ func UpdateCache() {
 
     var data Response
     if err := json.Unmarshal(body, &data); err != nil {
-		log.Println(err)
-		return
-	}
+        log.Println(err)
+        return
+    }
     modArr := data.Results
     sort.Sort(modArr)
 
@@ -1254,7 +1254,7 @@ func UpdateCache() {
 }
 
 func ReadCache() {
-	var guildMap GuildMap
+    var guildMap GuildMap
     ReadJson("guilds.json", &guildMap)
     for _, guild := range(s.State.Ready.Guilds) {
         guildData, ok := guildMap[guild.ID]
@@ -1274,17 +1274,17 @@ func ReadCache() {
 
 func main() {
     s.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {log.Println("READY")})
-	s.AddHandler(func(s *discordgo.Session, g *discordgo.GuildCreate) {
-		var guildMap GuildMap
-		ReadJson("guilds.json", &guildMap)
-		guildData, ok := guildMap[g.ID]
-		if !ok {
-			guildData.TrackedAuthors = make(map[string]bool)
-			guildData.TrackedMods = make(map[string]bool)
-		}
-		guildMap[g.ID] = guildData
-		WriteJson("guilds.json", guildMap)
-	})
+    s.AddHandler(func(s *discordgo.Session, g *discordgo.GuildCreate) {
+        var guildMap GuildMap
+        ReadJson("guilds.json", &guildMap)
+        guildData, ok := guildMap[g.ID]
+        if !ok {
+            guildData.TrackedAuthors = make(map[string]bool)
+            guildData.TrackedMods = make(map[string]bool)
+        }
+        guildMap[g.ID] = guildData
+        WriteJson("guilds.json", guildMap)
+    })
     s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
         if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
             h(s, i)
@@ -1300,13 +1300,13 @@ func main() {
         log.Fatalf("Cannot register commands: %v", err)
     }
 
-	ReadCache()
-	// go func() {
-	// 	for {
-	// 		UpdateCache()
-	// 		time.Sleep(time.Minute * 5)
-	// 	}
-	// }()
+    ReadCache()
+    // go func() {
+    // 	for {
+    // 		UpdateCache()
+    // 		time.Sleep(time.Minute * 5)
+    // 	}
+    // }()
 
     stop := make(chan os.Signal, 1)
     signal.Notify(stop, os.Interrupt)
