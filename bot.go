@@ -46,9 +46,10 @@ type Mod struct {
 
 type FullMod struct {
     *Mod
-    Thumbnail string `json:"thumbnail"`
-    Changelog string `json:"changelog"`
-	SourceURL string `json:"source_url"`
+	// Releases  []Release `json:"releases"`
+    Thumbnail string    `json:"thumbnail"`
+    Changelog string    `json:"changelog"`
+	SourceURL string    `json:"source_url"`
 }
 
 type LatestRelease struct {
@@ -350,7 +351,18 @@ func commands() []*discordgo.ApplicationCommand {
             Name: "version",
             Description: "Version filter",
             Autocomplete: true,
-        }},
+        },{
+			Type: discordgo.ApplicationCommandOptionString,
+			Name: "options",
+			Description: "Options to display different information",
+			Choices: []*discordgo.ApplicationCommandOptionChoice{{
+				Name: "Changelog",
+				Value: "changelog",
+			},{
+				Name: "Dependencies",
+				Value: "dependencies",
+			}},
+		}},
 	},{ // author
 		Type: discordgo.ChatApplicationCommand,
 		Name: "author",
@@ -362,7 +374,7 @@ func commands() []*discordgo.ApplicationCommand {
 			Required: true,
 			Autocomplete: true,
 		}},
-    },{ // track
+	},{ // track
         Type: discordgo.ChatApplicationCommand,
         Name: "track",
         Description: "Adds mods to the list of tracked mods",
@@ -517,21 +529,41 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 thumbnail = "https://assets-mod.factorio.com" + resp.Thumbnail
             }
 
+            fields := []*discordgo.MessageEmbedField{{
+                Name: "",
+                Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
+                Inline: true,
+            },{
+                Name: "",
+                Value: fmt.Sprintf("**Downloads:** %d", mod.DownloadsCount),
+                Inline: true,
+            }}
+
+			description := Truncate(mod.Summary, 2048)
+			if displayOptions, ok := options["options"]; ok {
+				var resp FullMod
+				RequestMod(mod.Name, &resp, true)
+				switch displayOptions.StringValue() {
+				case "changelog":
+					description = FormatChangelog(resp, mod)
+					if description == "" {
+						description = fmt.Sprintf("No changelog for latest release.")
+					}
+                    fields[1].Value = fmt.Sprintf("**Version:** %s", mod.LatestRelease.Version)
+				case "dependencies":
+					// for _, otherMod := range(mods) {
+					// 	otherMod.Releases
+					// }
+				}
+			}
+
             RespondEmbed(s, i, &discordgo.MessageEmbed{
 				Title: Truncate(mod.Title, 256),
                 URL: ModURL(mod.Name),
-                Description: Truncate(mod.Summary, 2048),
+                Description: description,
                 Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
                 Color: colors.Gold,
-                Fields: []*discordgo.MessageEmbedField{{
-					Name: "",
-					Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
-					Inline: true,
-				},{
-					Name: "",
-					Value: fmt.Sprintf("**Downloads:** %d", mod.DownloadsCount),
-					Inline: true,
-				}},
+                Fields: fields,
             })
         case discordgo.InteractionApplicationCommandAutocomplete:
             choices := []*discordgo.ApplicationCommandOptionChoice{}
@@ -1269,12 +1301,12 @@ func main() {
     }
 
 	ReadCache()
-	go func() {
-		for {
-			UpdateCache()
-			time.Sleep(time.Minute * 5)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		UpdateCache()
+	// 		time.Sleep(time.Minute * 5)
+	// 	}
+	// }()
 
     stop := make(chan os.Signal, 1)
     signal.Notify(stop, os.Interrupt)
