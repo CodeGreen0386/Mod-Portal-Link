@@ -35,21 +35,26 @@ type Response struct {
 
 type ModArr []Mod
 type Mod struct {
-    Name 		   string        `json:"name"`
-    Title 		   string        `json:"title"`
-    Owner 		   string        `json:"owner"`
-    Summary 	   string        `json:"summary"`
-    DownloadsCount int           `json:"downloads_count"`
-    Category       string        `json:"category"`
-    LatestRelease  LatestRelease `json:"latest_release"`
+    Name 		   string          `json:"name"`
+    Title 		   string          `json:"title"`
+    Owner 		   string          `json:"owner"`
+    Summary 	   string          `json:"summary"`
+    DownloadsCount int             `json:"downloads_count"`
+    Category       string          `json:"category"`
+    LatestRelease  LatestRelease   `json:"latest_release"`
+    Dependencies   map[string]bool `json:"dependencies"`
 }
 
 type FullMod struct {
     *Mod
-    // Releases  []Release `json:"releases"`
+    Releases  []Release `json:"releases"`
     Thumbnail string    `json:"thumbnail"`
     Changelog string    `json:"changelog"`
     SourceURL string    `json:"source_url"`
+}
+
+type Release struct {
+    *LatestRelease
 }
 
 type LatestRelease struct {
@@ -59,7 +64,8 @@ type LatestRelease struct {
 }
 
 type InfoJson struct {
-    FactorioVersion string `json:"factorio_version"`
+    FactorioVersion string   `json:"factorio_version"`
+    Dependencies    []string `json:"dependencies"`
 }
 
 type ModList struct {
@@ -341,29 +347,45 @@ func commands() []*discordgo.ApplicationCommand {
             Description: "Mod name",
             Required: true,
             Autocomplete: true,
-        },{
+        }, {
             Type: discordgo.ApplicationCommandOptionString,
             Name: "author",
             Description: "Author filter",
             Autocomplete: true,
-        },{
+        }, {
             Type: discordgo.ApplicationCommandOptionString,
             Name: "version",
             Description: "Version filter",
             Autocomplete: true,
-        },{
-            Type: discordgo.ApplicationCommandOptionString,
-            Name: "options",
-            Description: "Options to display different information",
-            Choices: []*discordgo.ApplicationCommandOptionChoice{{
-                Name: "Changelog",
-                Value: "changelog",
-            },{
-                Name: "Dependencies",
-                Value: "dependencies",
-            }},
         }},
-    },{ // author
+    }, { // changelog
+        Type: discordgo.ChatApplicationCommand,
+        Name: "changelog",
+        Description: "Displays the changelog of a mod",
+        Options: []*discordgo.ApplicationCommandOption{{
+            Type: discordgo.ApplicationCommandOptionString,
+            Name: "mod",
+            Description: "Mod name",
+            Required: true,
+            Autocomplete: true,
+        // }, {
+        //     Type: discordgo.ApplicationCommandOptionString,
+        //     Name: "version",
+        //     Description: "Version filter",
+        //     Autocomplete: true,
+        }},
+    }, { // dependencies
+        Type: discordgo.ChatApplicationCommand,
+        Name: "dependencies",
+        Description: "Links all mods that depend on another mod",
+        Options: []*discordgo.ApplicationCommandOption{{
+            Type: discordgo.ApplicationCommandOptionString,
+            Name: "mod",
+            Description: "Mod name",
+            Required: true,
+            Autocomplete: true,
+        }},
+    }, { // author
         Type: discordgo.ChatApplicationCommand,
         Name: "author",
         Description: "Links an author from the mod portal",
@@ -374,7 +396,7 @@ func commands() []*discordgo.ApplicationCommand {
             Required: true,
             Autocomplete: true,
         }},
-    },{ // track
+    }, { // track
         Type: discordgo.ChatApplicationCommand,
         Name: "track",
         Description: "Adds mods to the list of tracked mods",
@@ -390,7 +412,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{ // author
+        }, { // author
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "author",
             Description: "Adds an author to the list of tracked authors",
@@ -401,7 +423,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{ // file
+        }, { // file
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "file",
             Description: "Adds enabled mods from a mod-list.json to the list of tracked mods",
@@ -411,7 +433,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "mod-list.json file",
                 Required: true,
             }},
-        },{ // all
+        }, { // all
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "all",
             Description: "Sets whether all mods should be tracked",
@@ -421,7 +443,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "enabled",
                 Required: true,
             }},
-        },{ // enabled
+        }, { // enabled
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "enabled",
             Description: "Sets whether mod update notifications should be enabled",
@@ -431,7 +453,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "enabled",
                 Required: true,
             }},
-        },{ // changelogs
+        }, { // changelogs
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "changelogs",
             Description: "Sets whether the changelog should be shown for mod update messages",
@@ -441,7 +463,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "enabled",
                 Required: true,
             }},
-        },{ // set_channel
+        }, { // set_channel
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "set_channel",
             Description: "Sets the channel for mod update notifications",
@@ -451,16 +473,16 @@ func commands() []*discordgo.ApplicationCommand {
                 Description: "The channel to send update notifications to",
                 Required: true,
             }},
-        },{ // list
+        }, { // list
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "list",
             Description: "Lists the tracked mods and authors",
-        },{ // test
+        }, { // test
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "test",
             Description: "Tests the mod update channel with an embed",
         }},
-    },{ // untrack
+    }, { // untrack
         Type: discordgo.ChatApplicationCommand,
         Name: "untrack",
         Description: "Removes mods from the list of tracked mods",
@@ -476,7 +498,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{ // author
+        }, { // author
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "author",
             Description: "Removes an author from the list of tracked authors",
@@ -487,7 +509,7 @@ func commands() []*discordgo.ApplicationCommand {
                 Required: true,
                 Autocomplete: true,
             }},
-        },{ // all
+        }, { // all
             Type: discordgo.ApplicationCommandOptionSubCommand,
             Name: "all",
             Description: "Removes everything from the tracked list",
@@ -533,34 +555,16 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                 Name: "",
                 Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
                 Inline: true,
-            },{
+            }, {
                 Name: "",
                 Value: fmt.Sprintf("**Downloads:** %d", mod.DownloadsCount),
                 Inline: true,
             }}
 
-            description := Truncate(mod.Summary, 2048)
-            if displayOptions, ok := options["options"]; ok {
-                var resp FullMod
-                RequestMod(mod.Name, &resp, true)
-                switch displayOptions.StringValue() {
-                case "changelog":
-                    description = FormatChangelog(resp, mod)
-                    if description == "" {
-                        description = fmt.Sprintf("No changelog for latest release.")
-                    }
-                    fields[1].Value = fmt.Sprintf("**Version:** %s", mod.LatestRelease.Version)
-                case "dependencies":
-                    // for _, otherMod := range(mods) {
-                    // 	otherMod.Releases
-                    // }
-                }
-            }
-
             RespondEmbed(s, i, &discordgo.MessageEmbed{
                 Title: Truncate(mod.Title, 256),
                 URL: ModURL(mod.Name),
-                Description: description,
+                Description: Truncate(mod.Summary, 2048),
                 Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
                 Color: colors.Gold,
                 Fields: fields,
@@ -587,6 +591,70 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     })
                 }
             }
+
+            RespondChoices(s, i, choices)
+        }
+    },
+    "changelog": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+        data := i.ApplicationCommandData()
+        options := OptionsMap(&data)
+        switch i.Type {
+        case discordgo.InteractionApplicationCommand:
+            value := options["mod"].StringValue()
+            mod, ok := mods[value]
+            if !ok {
+                RespondEmbed(s, i, &discordgo.MessageEmbed{
+                    Title: "ERROR: Invalid Mod Name",
+                    Description: fmt.Sprintf("The mod `%s` was not found.", value),
+                    Color: colors.Red,
+                })
+                return
+            }
+
+            var resp FullMod
+            var thumbnail string
+            err := RequestMod(value, &resp, false)
+            if err != nil {
+                RespondDefaultError(s, i)
+                return
+            }
+            if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
+                thumbnail = "https://assets-mod.factorio.com" + resp.Thumbnail
+            }
+            description := FormatChangelog(resp, mod)
+            if description == "" {
+                description = fmt.Sprintf("No changelog for latest release.")
+            }
+
+            RespondEmbed(s, i, &discordgo.MessageEmbed{
+                Title: Truncate(mod.Title, 256),
+                URL: ModURL(mod.Name),
+                Description: description,
+                Thumbnail: &discordgo.MessageEmbedThumbnail{URL: thumbnail},
+                Color: colors.Gold,
+                Fields: []*discordgo.MessageEmbedField{{
+                    Name: "",
+                    Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
+                    Inline: true,
+                }, {
+                    Name: "",
+                    Value: fmt.Sprintf("**Version:** %s", mod.LatestRelease.Version),
+                    Inline: true,
+                }},
+            })
+        case discordgo.InteractionApplicationCommandAutocomplete:
+            choices := []*discordgo.ApplicationCommandOptionChoice{}
+            focused, err := FocusedOption(data.Options)
+            if err != nil {panic(err)}
+
+            switch focused.Name {
+            case "mod":
+                value := focused.StringValue()
+                modArr := VersionFilter(&data, options)
+                modArr = AuthorFilter(modArr, &data, options)
+                choices = ModAutocomplete(modArr, value)
+            }
+
             RespondChoices(s, i, choices)
         }
     },
@@ -661,7 +729,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
                     Name: "",
                     Value: fmt.Sprintf("**Total Mods:** %d", len(authorMods)),
                     Inline: true,
-                },{
+                }, {
                     Name: "",
                     Value: fmt.Sprintf("**Total Downloads:** %d", downloads),
                     Inline: true,
@@ -1075,8 +1143,8 @@ func CacheMods(modArr ModArr) {
         version := FormatVersion(mod.LatestRelease.InfoJson.FactorioVersion)
         if version == "" {continue}
         mods[mod.Name] = mod
-        owner := mod.Owner
-        authors[owner] = append(authors[owner], mod)
+        author := mod.Owner
+        authors[author] = append(authors[author], mod)
         versions[version] = append(versions[version], mod)
     }
 }
@@ -1118,7 +1186,6 @@ func FormatChangelog(resp FullMod, mod Mod) string {
     changelog = strings.Join(lines, "\n")
     re := regexp.MustCompile(`\n+`)
     changelog = re.ReplaceAllString(changelog, "\n")
-    // changelog = strings.ReplaceAll(changelog, "\n  ", "\n\u200b")
     if strings.Contains(resp.SourceURL, "https://github.com/") {
         re := regexp.MustCompile(`#[0-9]+`)
         changelog = re.ReplaceAllStringFunc(changelog, func(match string) string {
@@ -1128,7 +1195,7 @@ func FormatChangelog(resp FullMod, mod Mod) string {
     return Truncate(changelog, 4096)
 }
 
-func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew bool) {
+func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, resp FullMod, isNew bool) {
     var color int
     if isNew {
         color = colors.Green
@@ -1144,15 +1211,13 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
             Name: "Author:",
             Value: fmt.Sprintf("[%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
             Inline: true,
-        },{
+        }, {
             Name: "Version:",
             Value: mod.LatestRelease.Version,
             Inline: true,
         }},
     }
 
-    var resp FullMod
-    RequestMod(mod.Name, &resp, true)
     if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
         embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://assets-mod.factorio.com/" + resp.Thumbnail}
     }
@@ -1164,7 +1229,7 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
                 Name: "",
                 Value: fmt.Sprintf("**Author:** [%s](https://mods.factorio.com/user/%s)", mod.Owner, mod.Owner),
                 Inline: true,
-            },{
+            }, {
                 Name: "",
                 Value: "**Version:** " + mod.LatestRelease.Version,
                 Inline: true,
@@ -1180,6 +1245,7 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, isNew
 
 func CompareCache(modArr ModArr) {
     updated := make(UpdatedMods, 0)
+    oldMods := make(map[string]Mod)
     newMods := make(map[string]bool)
     var cache ModArr
     ReadJson("mods.json", &cache)
@@ -1191,6 +1257,7 @@ func CompareCache(modArr ModArr) {
             if !UpdatedMod(oldMod, mod) {
                 continue
             }
+            oldMods[oldMod.Name] = oldMod
         } else {
             newMods[mod.Name] = true
         }
@@ -1198,6 +1265,25 @@ func CompareCache(modArr ModArr) {
     }
     if updated.Len() == 0 {return}
     sort.Sort(updated)
+
+    fullMods := make(map[string]FullMod)
+    for _, mod := range(updated) {
+        var resp FullMod
+        RequestMod(mod.Name, &resp, true)
+        fullMods[mod.Name] = resp
+        dependencies := make(map[string]bool)
+        for _, dependency := range(resp.Releases[len(resp.Releases)].InfoJson.Dependencies) {
+            dependencies[strings.Split(dependency, " ")[1]] = true
+        }
+        for _, dependency := range(mod.LatestRelease.InfoJson.Dependencies) {
+            if _, ok := dependencies[dependency]; !ok {
+                delete(mods[dependency].Dependencies, mod.Name)
+            }
+        }
+        for name := range(dependencies) {
+            mods[name].Dependencies[mod.Name] = true
+        }
+    }
 
     var guildMap GuildMap
     ReadJson("guilds.json", &guildMap)
@@ -1220,7 +1306,8 @@ func CompareCache(modArr ModArr) {
                     continue
                 }
             }
-            UpdateMessageSend(s, guildData, mod, ok)
+
+            UpdateMessageSend(s, guildData, mod, fullMods[mod.Name], ok)
         }
     }
     WriteJson("guilds.json", guildMap)
@@ -1302,10 +1389,10 @@ func main() {
 
     ReadCache()
     go func() {
-    	for {
-    		UpdateCache()
-    		time.Sleep(time.Minute * 5)
-    	}
+        for {
+            UpdateCache()
+            time.Sleep(time.Minute * 5)
+        }
     }()
 
     stop := make(chan os.Signal, 1)
@@ -1319,3 +1406,7 @@ func main() {
         }
     }
 }
+
+// TODO: /changelog version
+// TODO: /api
+// TODO: /mod required by
