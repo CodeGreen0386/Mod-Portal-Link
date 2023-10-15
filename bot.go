@@ -613,7 +613,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 
             var resp FullMod
             var thumbnail string
-            err := RequestMod(value, &resp, false)
+            err := RequestMod(value, &resp, true)
             if err != nil {
                 RespondDefaultError(s, i)
                 return
