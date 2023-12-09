@@ -1219,7 +1219,7 @@ func UpdateMessageSend(s *discordgo.Session, guildData GuildData, mod Mod, resp 
     }
 
     if resp.Thumbnail != "" && resp.Thumbnail != "/assets/.thumb.png" {
-        embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://assets-mod.factorio.com/" + resp.Thumbnail}
+        embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://assets-mod.factorio.com" + resp.Thumbnail}
     }
     if guildData.Changelogs {
         changelog := FormatChangelog(resp, mod)
