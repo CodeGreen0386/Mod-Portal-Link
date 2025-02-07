@@ -82,13 +82,13 @@ func UpdateMods() {
 		return Ternary(a.Release.ReleasedAt <= b.Release.ReleasedAt, -1, 1)
 	})
 
-	alreadyNew := map[string]bool{}
 	var guildMap map[string]GuildData
 	ReadJson("guilds.json", &guildMap)
 	for _, guildData := range guildMap {
 		if !guildData.TrackEnabled || guildData.Channel == "" {
 			continue
 		}
+		alreadyNew := map[string]bool{}
 		for _, release := range releases {
 			mod := release.Mod
 			isNew := mod.CreatedAt > lastUpdated && !alreadyNew[mod.Name]
@@ -107,17 +107,11 @@ func UpdateMods() {
 		}
 	}
 
-	// latestRelease, err := time.Parse(time.RFC3339Nano, "2024-03-29T21:14:03.829000Z")
-	// now.Format(time.RFC3339Nano)
-
 	os.WriteFile("time.txt", []byte(now.Format(time.RFC3339Nano)), 0644)
 }
 
 func UpdateMessageSend(guildData GuildData, mod FullMod, version string, isNew bool) {
-	color := colors.Blue
-	if isNew {
-		color = colors.Green
-	}
+	color := Ternary(isNew, colors.Green, colors.Blue)
 
 	embed := &discordgo.MessageEmbed{
 		URL:   mod.URL(),
