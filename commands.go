@@ -228,6 +228,7 @@ func InitCommands() ([]*discordgo.ApplicationCommand, map[string]func(*discordgo
 	file := track.AddOption("file", "Adds enabled mods from a mod-list.json to the list of tracked mods")
 	file.AddOption("mod-list", "mod-list.json file").SetType("file")
 	track.AddOption("all", "Sets whether all mods should be tracked").AddOption("enabled", "enabled").SetType("bool")
+	track.AddOption("enabled", "Sets whether update messages should be sent").AddOption("enabled", "enabled").SetType("bool")
 	track.AddOption("changelogs", "Sets whether changelogs should be shown for mod updates").AddOption("enabled", "enabled").SetType("bool")
 	track.AddOption("set_channel", "Sets the channel for mod updates").AddOption("channel", "The channel to send mod updates in").SetType("channel")
 	track.AddOption("list", "Lists the tracked mods and authors").SetType("command")
