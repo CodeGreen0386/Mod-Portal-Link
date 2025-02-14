@@ -136,7 +136,7 @@ func (mod FullMod) FormatChangelog(version string) string {
 			continue
 		}
 		if part[i:i+j] != version {
-			break
+			continue
 		}
 		part = part[i+j+1:]
 		i = strings.Index(part, "Date: ")
