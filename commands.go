@@ -338,13 +338,13 @@ func InitCommands() ([]*discordgo.ApplicationCommand, map[string]func(*discordgo
 					return
 				}
 
-				modArr := make([]string, len(guildData.TrackedMods))
+				var modArr []string
 				for mod := range guildData.TrackedMods {
 					modArr = append(modArr, mod)
 				}
 				modOut := Truncate(fmt.Sprintf("**Mods:**\n%s\n\n", strings.Join(modArr, ", ")), 2000)
 
-				authorArr := make([]string, len(guildData.TrackedAuthors))
+				var authorArr []string
 				for author := range guildData.TrackedAuthors {
 					authorArr = append(authorArr, author)
 				}
