@@ -380,7 +380,7 @@ func InitCommands() ([]*discordgo.ApplicationCommand, map[string]func(*discordgo
 		}
 	}
 
-	untrack := NewCommand("untrack", "Removes mods from the list of tracked mods")
+	untrack := NewCommand("untrack", "Removes mods from the list of tracked mods").SetPermission(discordgo.PermissionManageServer)
 	commands = append(commands, untrack)
 	untrack.AddOption("mod", "Removes a mod from the list of tracked mods").AddOption("mod", "Mod name").SetAutocomplete()
 	untrack.AddOption("author", "Removes an author from the list of tracked authors").AddOption("author", "Author name").SetAutocomplete()
