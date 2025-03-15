@@ -162,7 +162,7 @@ func (mod FullMod) FormatChangelog(version string) string {
 		part = strings.Join(lines, "\n")
 		re := regexp.MustCompile(`\n+`)
 		part = re.ReplaceAllString(part, "\n")
-		if strings.Contains(mod.SourceURL, "https://github.com/") {
+		if strings.Contains(mod.SourceURL, "https://github.com/") || strings.Contains(mod.SourceURL, "https://codeberg.org/") {
 			re := regexp.MustCompile(`#[0-9]+`)
 			part = re.ReplaceAllStringFunc(part, func(match string) string {
 				return fmt.Sprintf("[%s](%s/issues/%s)", match, mod.SourceURL, match[1:])
