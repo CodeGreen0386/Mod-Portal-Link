@@ -106,6 +106,7 @@ func UpdateMods() {
 			UpdateMessageSend(guildData, mod, release.Release.Version, isNew)
 		}
 	}
+	WriteJson("guilds.json", &guildMap)
 
 	os.WriteFile("time.txt", []byte(now.Format(time.RFC3339Nano)), 0644)
 }
