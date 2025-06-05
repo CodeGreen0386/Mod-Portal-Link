@@ -46,7 +46,7 @@ func UpdateMods() {
 		if mod.FactorioVersion() == "" {
 			continue
 		}
-		if mod.LatestRelease.ReleasedAt < lastUpdated {
+		if mod.LatestRelease.ReleasedAt <= lastUpdated {
 			continue
 		}
 		updated = append(updated, mod)
