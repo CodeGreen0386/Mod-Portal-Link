@@ -46,7 +46,7 @@ func UpdateMods() {
 		if mod.FactorioVersion() == "" {
 			continue
 		}
-		if mod.LatestRelease.ReleasedAt <= lastUpdated {
+		if mod.LatestRelease.ReleasedAt < lastUpdated {
 			continue
 		}
 		updated = append(updated, mod)
@@ -108,7 +108,10 @@ func UpdateMods() {
 	}
 	WriteJson("guilds.json", &guildMap)
 
-	os.WriteFile("time.txt", []byte(now.Format(time.RFC3339Nano)), 0644)
+	nowString := []byte(now.Format(time.RFC3339Nano))
+	go func() {
+		for os.WriteFile("time.txt", nowString, 0644) != nil {}
+	}()
 }
 
 func UpdateMessageSend(guildData GuildData, mod FullMod, version string, isNew bool) {
