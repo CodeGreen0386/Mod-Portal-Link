@@ -58,6 +58,20 @@ type ModListMod struct {
 	Enabled bool   `json:"enabled"`
 }
 
+var allowedSourceURLs = []string{
+	"https://github.com/",
+	"https://codeberg.org/",
+}
+
+func isAllowedSourceURL(url string) bool {
+	for _, allowedURL := range allowedSourceURLs {
+		if strings.Contains(url, allowedURL) {
+			return true
+		}
+	}
+	return false
+}
+
 func (mod Mod) URL() string {
 	return fmt.Sprintf("https://mods.factorio.com/mod/%s", strings.Replace(mod.Name, " ", "%20", -1))
 }
@@ -162,10 +176,15 @@ func (mod FullMod) FormatChangelog(version string) string {
 		part = strings.Join(lines, "\n")
 		re := regexp.MustCompile(`\n+`)
 		part = re.ReplaceAllString(part, "\n")
-		if strings.Contains(mod.SourceURL, "https://github.com/") || strings.Contains(mod.SourceURL, "https://codeberg.org/") {
-			re := regexp.MustCompile(`#[0-9]+`)
-			part = re.ReplaceAllStringFunc(part, func(match string) string {
+
+		if isAllowedSourceURL(mod.SourceURL) {
+			issues := regexp.MustCompile(`#[0-9]+`)
+			part = issues.ReplaceAllStringFunc(part, func(match string) string {
 				return fmt.Sprintf("[%s](%s/issues/%s)", match, mod.SourceURL, match[1:])
+			})
+			pulls := regexp.MustCompile(`![0-9]+`)
+			part = pulls.ReplaceAllStringFunc(part, func(match string) string {
+				return fmt.Sprintf("[%s](%s/pulls/%s)", match, mod.SourceURL, match[1:])
 			})
 		}
 		return Truncate(part, 4096)
