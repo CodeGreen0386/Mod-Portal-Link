@@ -431,23 +431,12 @@ func InitCommands() ([]*discordgo.ApplicationCommand, map[string]func(*discordgo
             switch focused.Name {
             case "mod":
                 var modArr []*Mod
-                c := 0
                 for name := range guildData.TrackedMods {
                     modArr = append(modArr, mods[name])
-                    if c++; c >= 25 {
-                        break
-                    }
                 }
-                choices = ModChoices(modArr)
+                choices = ModChoices(ModAutocomplete(modArr, focused.StringValue()))
             case "author":
-                var authorArr []*Author
-                c := 0
-                for name := range guildData.TrackedAuthors {
-                    authorArr = append(authorArr, authors[name])
-                    if c++; c >= 25 {
-                        break
-                    }
-                }
+				authorArr := AuthorAutocompleteList(guildData.TrackedAuthors, focused.StringValue())
                 choices = AuthorChoices(authorArr)
             }
             RespondChoices(i, choices)

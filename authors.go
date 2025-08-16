@@ -74,3 +74,13 @@ func AuthorAutocomplete(value string) []*Author {
 	}
 	return first
 }
+
+func AuthorAutocompleteList(authorList map[string]bool, value string) []*Author {
+	newList := []*Author{}
+	for name := range authorList {
+		if strings.Index(name, value) != -1 {
+			newList = append(newList, authors[name])
+		}
+	}
+	return newList
+}
