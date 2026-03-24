@@ -42,6 +42,7 @@ func UpdateMods() {
 	go CacheModList(modList.Results)
 
 	var updated []Mod
+	newLastUpdated := lastUpdated
 	for _, mod := range modList.Results {
 		if mod.FactorioVersion() == "" {
 			continue
@@ -50,6 +51,9 @@ func UpdateMods() {
 			continue
 		}
 		updated = append(updated, mod)
+		if mod.LatestRelease.ReleasedAt > newLastUpdated {
+			newLastUpdated = mod.LatestRelease.ReleasedAt
+		}
 	}
 
 	defer log.Printf("Updated %d mods\n", len(updated))
@@ -108,9 +112,8 @@ func UpdateMods() {
 	}
 	WriteJson("guilds.json", &guildMap)
 
-	nowString := []byte(now.Format(time.RFC3339Nano))
 	go func() {
-		for os.WriteFile("time.txt", nowString, 0644) != nil {}
+		for os.WriteFile("time.txt", []byte(newLastUpdated), 0644) != nil {}
 	}()
 }
 
