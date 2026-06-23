@@ -9,7 +9,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-const defaultVersion = "2.0"
+const defaultVersion = "2.1"
 
 var (
 	s               *discordgo.Session
